@@ -14,6 +14,22 @@ export interface AuthUser {
   email: string;
   role: UserRole;
   phone?: string;
+  establishmentName?: string;
+  vehicleType?: string;
+  points?: number;
+  tier?: 'Bronze Donor' | 'Silver Rescuer' | 'Gold Champion' | 'Platinum Hero';
+  quizPassed?: boolean;
+}
+
+export interface RegisteredUser {
+  id: string;
+  name: string;
+  email: string;
+  password: string;
+  role: UserRole;
+  phone?: string;
+  establishmentName?: string;
+  vehicleType?: string;
   points?: number;
   tier?: 'Bronze Donor' | 'Silver Rescuer' | 'Gold Champion' | 'Platinum Hero';
   quizPassed?: boolean;

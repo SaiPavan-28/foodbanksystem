@@ -11,6 +11,7 @@ import {
   RequestStatus,
   VolunteerStatus,
   AuthUser,
+  RegisteredUser,
   ChatMessage,
   NotificationAlert
 } from '../types/foodbridge';
@@ -22,7 +23,8 @@ interface FoodBridgeContextType {
   setTargetLoginRole: (role: UserRole) => void;
   openLoginForRole: (role: UserRole) => void;
   authUser: AuthUser | null;
-  login: (role: UserRole, email: string) => void;
+  login: (role: UserRole, email: string, password?: string) => { success: boolean; error?: string };
+  registerUser: (newUser: Omit<RegisteredUser, 'id'>) => { success: boolean; error?: string };
   logout: () => void;
   passVolunteerQuiz: (score: number) => void;
   requests: DonationRequest[];
@@ -137,9 +139,47 @@ const INITIAL_TRAINING: TrainingModule[] = [
   { id: 'tr-1', title: 'Food Safety Protocol Level 1', duration: '15 mins', category: 'Food Hygiene', completed: true, score: 95 }
 ];
 
+const INITIAL_REGISTERED_USERS: RegisteredUser[] = [
+  {
+    id: 'usr-donor-1',
+    name: 'Sri Grand Marriage Hall',
+    email: 'donor@foodbridge.org',
+    password: 'password123',
+    role: 'donor',
+    phone: '+91 98401 22334',
+    establishmentName: 'Sri Grand Marriage Hall',
+    points: 450,
+    tier: 'Gold Champion'
+  },
+  {
+    id: 'usr-vol-1',
+    name: 'Karthik Raja',
+    email: 'volunteer@foodbridge.org',
+    password: 'password123',
+    role: 'volunteer',
+    phone: '+91 98401 23456',
+    vehicleType: 'Three Wheeler (Auto)',
+    points: 2400,
+    quizPassed: true
+  },
+  {
+    id: 'usr-admin-1',
+    name: 'System Administrator',
+    email: 'admin@foodbridge.org',
+    password: 'password123',
+    role: 'admin',
+    phone: '+91 98400 00000'
+  }
+];
+
 export const FoodBridgeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [currentRole, setCurrentRole] = useState<UserRole>('public');
   const [targetLoginRole, setTargetLoginRole] = useState<UserRole>('donor');
+
+  const [registeredUsers, setRegisteredUsers] = useState<RegisteredUser[]>(() => {
+    const saved = localStorage.getItem('foodbridge_registered_users');
+    return saved ? JSON.parse(saved) : INITIAL_REGISTERED_USERS;
+  });
 
   const [authUser, setAuthUser] = useState<AuthUser | null>(() => {
     const saved = localStorage.getItem('foodbridge_auth');
@@ -157,6 +197,10 @@ export const FoodBridgeProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   const [notifications, setNotifications] = useState<NotificationAlert[]>([]);
 
   useEffect(() => {
+    localStorage.setItem('foodbridge_registered_users', JSON.stringify(registeredUsers));
+  }, [registeredUsers]);
+
+  useEffect(() => {
     if (authUser) {
       localStorage.setItem('foodbridge_auth', JSON.stringify(authUser));
     } else {
@@ -170,19 +214,87 @@ export const FoodBridgeProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     setCurrentRole('login');
   };
 
-  const login = (role: UserRole, email: string) => {
-    const name = role === 'donor' ? 'Sri Grand Marriage Hall' : role === 'volunteer' ? 'Karthik Raja' : 'System Administrator';
-    const user: AuthUser = {
-      id: `usr-${Date.now()}`,
-      name,
-      email,
-      role,
-      points: role === 'donor' ? 450 : undefined,
-      tier: role === 'donor' ? 'Gold Champion' : undefined,
-      quizPassed: role === 'volunteer' ? true : undefined
+  const login = (role: UserRole, email: string, password?: string): { success: boolean; error?: string } => {
+    const trimmedEmail = email.trim().toLowerCase();
+    const foundUser = registeredUsers.find(
+      u => u.email.toLowerCase() === trimmedEmail
+    );
+
+    if (!foundUser) {
+      return {
+        success: false,
+        error: `No account found for "${email}". Please register a new account.`
+      };
+    }
+
+    if (password && foundUser.password !== password) {
+      return {
+        success: false,
+        error: 'Invalid password. Please check your credentials.'
+      };
+    }
+
+    if (foundUser.role !== role) {
+      return {
+        success: false,
+        error: `Account "${email}" is registered as ${foundUser.role.toUpperCase()}. Please select the ${foundUser.role.toUpperCase()} tab.`
+      };
+    }
+
+    const sessionUser: AuthUser = {
+      id: foundUser.id,
+      name: foundUser.name,
+      email: foundUser.email,
+      role: foundUser.role,
+      phone: foundUser.phone,
+      establishmentName: foundUser.establishmentName,
+      vehicleType: foundUser.vehicleType,
+      points: foundUser.points || (foundUser.role === 'donor' ? 100 : 50),
+      tier: foundUser.tier || 'Bronze Donor',
+      quizPassed: foundUser.quizPassed
     };
-    setAuthUser(user);
+
+    setAuthUser(sessionUser);
     setCurrentRole(role);
+    return { success: true };
+  };
+
+  const registerUser = (newUser: Omit<RegisteredUser, 'id'>): { success: boolean; error?: string } => {
+    const trimmedEmail = newUser.email.trim().toLowerCase();
+    const existing = registeredUsers.find(u => u.email.toLowerCase() === trimmedEmail);
+
+    if (existing) {
+      return {
+        success: false,
+        error: `An account with email "${newUser.email}" already exists. Please Sign In.`
+      };
+    }
+
+    const created: RegisteredUser = {
+      ...newUser,
+      id: `usr-${Date.now()}`,
+      points: newUser.role === 'donor' ? 100 : 50,
+      tier: 'Bronze Donor'
+    };
+
+    setRegisteredUsers(prev => [...prev, created]);
+
+    const sessionUser: AuthUser = {
+      id: created.id,
+      name: created.name,
+      email: created.email,
+      role: created.role,
+      phone: created.phone,
+      establishmentName: created.establishmentName,
+      vehicleType: created.vehicleType,
+      points: created.points,
+      tier: created.tier,
+      quizPassed: created.quizPassed
+    };
+
+    setAuthUser(sessionUser);
+    setCurrentRole(created.role);
+    return { success: true };
   };
 
   const logout = () => {
@@ -196,6 +308,9 @@ export const FoodBridgeProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     );
     if (authUser) {
       setAuthUser({ ...authUser, quizPassed: true });
+      setRegisteredUsers(prev =>
+        prev.map(u => (u.id === authUser.id ? { ...u, quizPassed: true } : u))
+      );
     }
   };
 
@@ -423,6 +538,7 @@ export const FoodBridgeProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         openLoginForRole,
         authUser,
         login,
+        registerUser,
         logout,
         passVolunteerQuiz,
         requests,

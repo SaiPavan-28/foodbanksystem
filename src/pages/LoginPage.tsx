@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { Utensils, Shield, Users, Lock, Mail, ArrowRight, Award, ArrowLeft, UserPlus, LogIn, CheckCircle2, AlertTriangle, Phone, Building, Truck, MapPin } from 'lucide-react';
+import { Utensils, Shield, Users, Lock, Mail, ArrowRight, Award, ArrowLeft, UserPlus, LogIn, CheckCircle2, AlertTriangle, Phone, Building, Truck, AlertCircle } from 'lucide-react';
 import { useFoodBridge } from '../context/FoodBridgeContext';
 import { UserRole } from '../types/foodbridge';
 import { VolunteerQuizModal } from '../components/VolunteerQuizModal';
 
 export const LoginPage: React.FC = () => {
-  const { login, setCurrentRole, targetLoginRole, passVolunteerQuiz } = useFoodBridge();
+  const { login, registerUser, setCurrentRole, targetLoginRole, passVolunteerQuiz } = useFoodBridge();
 
   // Mode: Sign In vs Register
   const [authMode, setAuthMode] = useState<'signin' | 'register'>('signin');
@@ -24,9 +24,9 @@ export const LoginPage: React.FC = () => {
   const [regVehicleType, setRegVehicleType] = useState('Two Wheeler (Bike)');
   const [regAreaName, setRegAreaName] = useState('T. Nagar');
 
-  // Modal State for Volunteer Quiz Gate
+  // Modal & Error State
+  const [authError, setAuthError] = useState<string | null>(null);
   const [showQuizModal, setShowQuizModal] = useState<boolean>(false);
-  const [quizFailMessage, setQuizFailMessage] = useState<string | null>(null);
 
   useEffect(() => {
     if (targetLoginRole === 'volunteer' || targetLoginRole === 'admin' || targetLoginRole === 'donor') {
@@ -38,34 +38,69 @@ export const LoginPage: React.FC = () => {
   const handleRoleSelect = (role: UserRole) => {
     setSelectedRole(role);
     setEmail(`${role}@foodbridge.org`);
+    setAuthError(null);
   };
 
   const handleSignInSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    login(selectedRole, email);
+    setAuthError(null);
+
+    const res = login(selectedRole, email, password);
+    if (!res.success && res.error) {
+      setAuthError(res.error);
+    }
   };
 
   const handleQuickDemoLogin = (role: UserRole) => {
-    login(role, `${role}@foodbridge.org`);
+    setAuthError(null);
+    const demoEmail = `${role}@foodbridge.org`;
+    const res = login(role, demoEmail, 'password123');
+    if (!res.success && res.error) {
+      setAuthError(res.error);
+    }
   };
 
   const handleRegisterSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    setAuthError(null);
 
     if (selectedRole === 'volunteer') {
-      // New Volunteer Registration Gate: Must pass qualification quiz!
-      setQuizFailMessage(null);
+      // Volunteer Registration Gate: Must pass qualification quiz first!
       setShowQuizModal(true);
     } else {
-      // New Donor Registration
-      login('donor', regEmail || 'newdonor@foodbridge.org');
+      // Donor or Admin Registration
+      const res = registerUser({
+        name: regName || 'Surplus Food Donor',
+        email: regEmail,
+        password: regPassword,
+        role: selectedRole,
+        phone: regPhone,
+        establishmentName: regEstablishment || regName
+      });
+
+      if (!res.success && res.error) {
+        setAuthError(res.error);
+      }
     }
   };
 
   const handleQuizSuccess = (score?: number) => {
     setShowQuizModal(false);
     passVolunteerQuiz(score || 100);
-    login('volunteer', regEmail || 'newvolunteer@foodbridge.org');
+
+    const res = registerUser({
+      name: regName || 'Field Rescue Volunteer',
+      email: regEmail || `vol_${Date.now()}@foodbridge.org`,
+      password: regPassword || 'password123',
+      role: 'volunteer',
+      phone: regPhone,
+      vehicleType: regVehicleType,
+      quizPassed: true
+    });
+
+    if (!res.success && res.error) {
+      setAuthError(res.error);
+    }
   };
 
   return (
@@ -101,7 +136,7 @@ export const LoginPage: React.FC = () => {
 
             <p className="text-slate-600 text-sm leading-relaxed font-medium">
               {authMode === 'signin'
-                ? 'Sign in with your credentials or select an instant demo account below.'
+                ? 'Sign in with your registered credentials or select a 1-click demo account below.'
                 : 'Create your FoodBridge account. Volunteers must complete mandatory safety qualification.'}
             </p>
           </div>
@@ -124,7 +159,7 @@ export const LoginPage: React.FC = () => {
           <div className="pt-2">
             <div className="p-3 bg-emerald-50 border border-emerald-300 rounded-2xl text-xs text-emerald-900 font-semibold flex items-center gap-2">
               <CheckCircle2 className="w-4 h-4 text-emerald-700" />
-              <span>100% Verified Food Rescue Protocols</span>
+              <span>100% Verified Credential Authentication</span>
             </div>
           </div>
         </div>
@@ -136,7 +171,7 @@ export const LoginPage: React.FC = () => {
           <div className="grid grid-cols-2 gap-1 p-1 bg-slate-100 rounded-2xl border border-slate-200 text-xs font-bold">
             <button
               type="button"
-              onClick={() => setAuthMode('signin')}
+              onClick={() => { setAuthMode('signin'); setAuthError(null); }}
               className={`py-3 rounded-xl flex items-center justify-center gap-2 transition-all ${
                 authMode === 'signin' ? 'bg-slate-900 text-white shadow-md font-extrabold' : 'text-slate-600 hover:text-slate-900'
               }`}
@@ -147,7 +182,7 @@ export const LoginPage: React.FC = () => {
 
             <button
               type="button"
-              onClick={() => setAuthMode('register')}
+              onClick={() => { setAuthMode('register'); setAuthError(null); }}
               className={`py-3 rounded-xl flex items-center justify-center gap-2 transition-all ${
                 authMode === 'register' ? 'bg-[#0F5132] text-white shadow-md font-extrabold' : 'text-slate-600 hover:text-slate-900'
               }`}
@@ -188,6 +223,14 @@ export const LoginPage: React.FC = () => {
             </button>
           </div>
 
+          {/* Inline Error Alert */}
+          {authError && (
+            <div className="p-3 bg-rose-50 border border-rose-300 rounded-2xl text-xs text-rose-900 font-bold flex items-start gap-2 animate-shake">
+              <AlertCircle className="w-4 h-4 text-rose-600 mt-0.5 shrink-0" />
+              <span>{authError}</span>
+            </div>
+          )}
+
           {/* Form 1: Existing User Sign In */}
           {authMode === 'signin' && (
             <form onSubmit={handleSignInSubmit} className="space-y-4">
@@ -225,7 +268,7 @@ export const LoginPage: React.FC = () => {
                 type="submit"
                 className="w-full py-4 bg-gradient-to-r from-[#0F5132] to-[#059669] hover:from-[#064E3B] hover:to-[#047857] text-white font-black text-xs uppercase tracking-wider rounded-2xl shadow-xl flex items-center justify-center gap-2 transition-all"
               >
-                <span>Sign In as {selectedRole.toUpperCase()}</span>
+                <span>Authenticate & Sign In as {selectedRole.toUpperCase()}</span>
                 <ArrowRight className="w-4 h-4" />
               </button>
             </form>
