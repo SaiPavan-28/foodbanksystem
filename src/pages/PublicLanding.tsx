@@ -1,5 +1,5 @@
 import React from 'react';
-import { ShieldCheck, HeartHandshake, Clock, Users, ArrowRight, Award, Zap, CheckCircle2, TrendingUp, Utensils, Heart } from 'lucide-react';
+import { ShieldCheck, HeartHandshake, Clock, Users, ArrowRight, Award, Zap, CheckCircle2, TrendingUp, Utensils, Heart, LogIn } from 'lucide-react';
 import { useFoodBridge } from '../context/FoodBridgeContext';
 
 export const PublicLanding: React.FC = () => {
@@ -18,7 +18,7 @@ export const PublicLanding: React.FC = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-center">
             
-            {/* Left Column: Text & CTAs */}
+            {/* Left Column: Text & Action Buttons */}
             <div className="lg:col-span-7 space-y-6 text-left">
               
               <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-emerald-100 border border-emerald-300 text-emerald-900 text-xs font-extrabold shadow-sm">
@@ -38,7 +38,7 @@ export const PublicLanding: React.FC = () => {
                 </p>
               </div>
 
-              {/* Action Buttons (Clean 2 CTAs) */}
+              {/* Action Buttons (Featuring Sign In / Register) */}
               <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 pt-2">
                 <button
                   onClick={() => openLoginForRole('donor')}
@@ -55,6 +55,16 @@ export const PublicLanding: React.FC = () => {
                 >
                   <Users className="w-4 h-4 text-[#84CC16]" />
                   <span>Join as Volunteer</span>
+                </button>
+
+                {/* Hero Sign In / Register Button */}
+                <button
+                  onClick={() => openLoginForRole('donor')}
+                  className="px-6 py-4 bg-white hover:bg-emerald-50 border-2 border-emerald-600 text-emerald-900 font-black text-sm rounded-2xl shadow-md flex items-center justify-center gap-2 transition-all hover:scale-105"
+                  id="hero-sign-in-register-btn"
+                >
+                  <LogIn className="w-4.5 h-4.5 text-emerald-700 stroke-[3]" />
+                  <span>Sign In / Register</span>
                 </button>
               </div>
 

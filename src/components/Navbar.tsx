@@ -72,8 +72,8 @@ export const Navbar: React.FC = () => {
               <span className="hidden sm:inline">Simulate Food Request</span>
             </button>
 
-            {/* Sign In / Sign Out Controls */}
-            {authUser ? (
+            {/* Logged in User Controls */}
+            {authUser && (
               <div className="flex items-center gap-2 pl-2 border-l border-slate-800">
                 <div className="hidden xl:block text-right">
                   <div className="text-xs font-bold text-slate-200">{authUser.name}</div>
@@ -88,15 +88,6 @@ export const Navbar: React.FC = () => {
                   <span>Sign Out</span>
                 </button>
               </div>
-            ) : (
-              <button
-                onClick={() => openLoginForRole('donor')}
-                className="flex items-center gap-1.5 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-slate-950 font-extrabold text-xs px-4 py-2 rounded-xl shadow-lg transition-all scale-100 hover:scale-105"
-                id="sign-in-register-btn"
-              >
-                <LogIn className="w-4 h-4 stroke-[3]" />
-                <span>Sign In / Register</span>
-              </button>
             )}
 
           </div>
