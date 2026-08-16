@@ -1,9 +1,9 @@
 import React from 'react';
-import { ShieldCheck, HeartHandshake, Clock, Users, ArrowRight, Award, Zap, CheckCircle2, TrendingUp, Utensils, Heart, LogIn } from 'lucide-react';
+import { ShieldCheck, HeartHandshake, Clock, Users, ArrowRight, Award, Zap, CheckCircle2, TrendingUp, Utensils, Heart } from 'lucide-react';
 import { useFoodBridge } from '../context/FoodBridgeContext';
 
 export const PublicLanding: React.FC = () => {
-  const { setCurrentRole, openLoginForRole, stats } = useFoodBridge();
+  const { openLoginForRole, stats } = useFoodBridge();
 
   return (
     <div className="min-h-screen bg-[#FAF8F5] text-slate-900 selection:bg-emerald-500 selection:text-white">
@@ -18,7 +18,7 @@ export const PublicLanding: React.FC = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-center">
             
-            {/* Left Column: Text & CTAs (7 cols) */}
+            {/* Left Column: Text & CTAs */}
             <div className="lg:col-span-7 space-y-6 text-left">
               
               <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-emerald-100 border border-emerald-300 text-emerald-900 text-xs font-extrabold shadow-sm">
@@ -38,7 +38,7 @@ export const PublicLanding: React.FC = () => {
                 </p>
               </div>
 
-              {/* Action Buttons */}
+              {/* Action Buttons (Clean 2 CTAs) */}
               <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 pt-2">
                 <button
                   onClick={() => openLoginForRole('donor')}
@@ -55,14 +55,6 @@ export const PublicLanding: React.FC = () => {
                 >
                   <Users className="w-4 h-4 text-[#84CC16]" />
                   <span>Join as Volunteer</span>
-                </button>
-
-                <button
-                  onClick={() => openLoginForRole('donor')}
-                  className="px-6 py-4 bg-white hover:bg-slate-50 border-2 border-slate-300 text-slate-800 font-bold text-sm rounded-2xl shadow-sm flex items-center justify-center gap-2 transition-all"
-                >
-                  <LogIn className="w-4 h-4 text-emerald-600" />
-                  <span>Sign In / Register</span>
                 </button>
               </div>
 
@@ -81,7 +73,7 @@ export const PublicLanding: React.FC = () => {
 
             </div>
 
-            {/* Right Column: Uploaded Hero Graphic (5 cols) */}
+            {/* Right Column: Hero Graphic */}
             <div className="lg:col-span-5 relative">
               <div className="relative rounded-3xl overflow-hidden shadow-2xl border-4 border-white bg-white p-2 transform transition-all duration-300 hover:scale-[1.02]">
                 <img
@@ -90,7 +82,6 @@ export const PublicLanding: React.FC = () => {
                   className="w-full h-auto rounded-2xl object-cover"
                 />
 
-                {/* Overlay Badge */}
                 <div className="absolute bottom-6 left-6 right-6 bg-white/95 backdrop-blur-md p-3.5 rounded-2xl border border-slate-200 shadow-xl flex items-center justify-between gap-3">
                   <div className="flex items-center gap-2.5">
                     <div className="w-9 h-9 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold">
@@ -144,7 +135,6 @@ export const PublicLanding: React.FC = () => {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-          
           <div className="bg-white p-6 rounded-3xl border border-slate-200/80 shadow-lg space-y-4 hover:shadow-xl transition-all">
             <div className="w-12 h-12 rounded-2xl bg-amber-100 text-amber-800 flex items-center justify-center font-black text-xl">1</div>
             <h3 className="font-bold text-lg text-slate-900">Donor Request</h3>
@@ -176,7 +166,6 @@ export const PublicLanding: React.FC = () => {
               Food is delivered directly to verified shelters with manual recipient confirmation & credit points.
             </p>
           </div>
-
         </div>
       </section>
 
