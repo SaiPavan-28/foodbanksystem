@@ -1,0 +1,20 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-[#FAF8F5] text-slate-900 font-sans antialiased;
+  }
+}
+
+/* Custom leaflet map markers overrides */
+.leaflet-container {
+  font-family: 'Plus Jakarta Sans', sans-serif !important;
+  background-color: #0F172A !important;
+}
+
+.custom-map-icon {
+  background: transparent;
+  border: none;
+}
