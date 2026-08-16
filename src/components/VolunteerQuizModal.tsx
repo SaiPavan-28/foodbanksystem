@@ -6,7 +6,7 @@ import confetti from 'canvas-confetti';
 
 interface VolunteerQuizModalProps {
   onClose: () => void;
-  onSuccess: () => void;
+  onSuccess: (score?: number) => void;
 }
 
 const QUIZ_QUESTIONS: QuizQuestion[] = [
@@ -38,25 +38,25 @@ const QUIZ_QUESTIONS: QuizQuestion[] = [
     id: 3,
     question: "If NGO shelter capacity is fully booked when you arrive with surplus food, what is the correct protocol?",
     options: [
-      "Discard the food in a nearby bin",
-      "Return the food back to the donor",
-      "Use the FoodBridge Fallback Routing feature to deliver to verified needy families/shelters",
+      "Discard the food in the nearest bin",
+      "Return the food to the donor",
+      "Use the FoodBridge Fallback Routing feature to reroute to the nearest high-density hunger hotspot",
       "Keep the food for personal use"
     ],
     correctAnswer: 2,
-    explanation: "FoodBridge automatically triggers Fallback Routing to redirect surplus food to nearby verified families or secondary shelters."
+    explanation: "FoodBridge automatically provides automated fallback routing to secondary verified shelters when primary shelters reach max capacity."
   },
   {
     id: 4,
     question: "Why does FoodBridge batch small donations (< 5kg) into single multi-stop volunteer trips?",
     options: [
-      "To reject small donations from individuals",
+      "To delay food delivery",
       "To optimize volunteer routes and prevent small surplus rejections",
-      "To charge donors extra delivery fees",
-      "To slow down the delivery process"
+      "To charge extra fees to donors",
+      "Because single pickups are prohibited"
     ],
     correctAnswer: 1,
-    explanation: "Small-quantity pooling combines multiple small food offers into one efficient trip, saving volunteer fuel and preventing rejection."
+    explanation: "Pooling small donations into a single batch trip ensures small surplus isn't turned down and optimizes volunteer mileage."
   }
 ];
 
@@ -67,73 +67,87 @@ export const VolunteerQuizModal: React.FC<VolunteerQuizModalProps> = ({ onClose,
   const [submitted, setSubmitted] = useState<boolean>(false);
   const [score, setScore] = useState<number>(0);
 
-  const handleSelectOption = (qId: number, optIndex: number) => {
-    setSelectedAnswers(prev => ({ ...prev, [qId]: optIndex }));
+  const currentQ = QUIZ_QUESTIONS[currentStep];
+
+  const handleSelectOption = (optionIndex: number) => {
+    setSelectedAnswers(prev => ({ ...prev, [currentQ.id]: optionIndex }));
   };
 
   const handleNext = () => {
     if (currentStep < QUIZ_QUESTIONS.length - 1) {
       setCurrentStep(prev => prev + 1);
-    } else {
-      // Grade quiz
-      let correct = 0;
-      QUIZ_QUESTIONS.forEach(q => {
-        if (selectedAnswers[q.id] === q.correctAnswer) {
-          correct += 1;
-        }
-      });
-      const pct = Math.round((correct / QUIZ_QUESTIONS.length) * 100);
-      setScore(pct);
-      setSubmitted(true);
-
-      if (pct >= 75) {
-        passVolunteerQuiz(pct);
-        confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
-      }
     }
   };
 
-  const currentQ = QUIZ_QUESTIONS[currentStep];
+  const handlePrev = () => {
+    if (currentStep > 0) {
+      setCurrentStep(prev => prev - 1);
+    }
+  };
+
+  const handleSubmitQuiz = () => {
+    let correctCount = 0;
+    QUIZ_QUESTIONS.forEach(q => {
+      if (selectedAnswers[q.id] === q.correctAnswer) {
+        correctCount++;
+      }
+    });
+
+    const percentage = Math.round((correctCount / QUIZ_QUESTIONS.length) * 100);
+    setScore(percentage);
+    setSubmitted(true);
+
+    if (percentage >= 75) {
+      passVolunteerQuiz(percentage);
+      confetti({ particleCount: 120, spread: 80, origin: { y: 0.5 } });
+    }
+  };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/85 backdrop-blur-md p-4 overflow-y-auto">
-      <div className="bg-slate-900 border border-teal-500/40 text-slate-100 rounded-3xl max-w-xl w-full p-6 sm:p-8 shadow-2xl space-y-6 animate-in fade-in zoom-in-95">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 backdrop-blur-md p-4">
+      <div className="bg-[#0F172A] border-2 border-teal-500 rounded-3xl max-w-lg w-full p-6 sm:p-8 shadow-2xl text-slate-100 relative space-y-6">
         
         {/* Header */}
         <div className="flex items-center justify-between border-b border-slate-800 pb-4">
           <div className="flex items-center gap-3">
-            <div className="p-3 bg-teal-950 border border-teal-600 rounded-2xl text-[#84CC16]">
-              <ShieldCheck className="w-6 h-6" />
+            <div className="p-2.5 bg-teal-950 text-[#84CC16] border border-teal-600/60 rounded-2xl">
+              <Award className="w-6 h-6" />
             </div>
             <div>
-              <h2 className="text-xl font-bold text-slate-100">Volunteer Qualification Quiz</h2>
-              <p className="text-xs text-teal-300 font-medium">Complete test to unlock active field rescue status (Pass mark: 75%)</p>
+              <h2 className="font-extrabold text-lg text-white">Volunteer Qualification Test</h2>
+              <p className="text-[10px] text-teal-300 uppercase font-bold tracking-wider">
+                Food Safety & Golden Hour Protocol
+              </p>
             </div>
           </div>
-          <button onClick={onClose} className="p-2 text-slate-400 hover:text-white bg-slate-800 rounded-xl">
+          <button
+            onClick={onClose}
+            className="p-2 text-slate-400 hover:text-white rounded-xl bg-slate-900 border border-slate-800 transition-all"
+          >
             <X className="w-5 h-5" />
           </button>
         </div>
 
         {!submitted ? (
           <div className="space-y-6">
-            {/* Progress Bar */}
-            <div className="space-y-1.5">
-              <div className="flex justify-between text-xs text-slate-400 font-bold">
-                <span>Question {currentStep + 1} of {QUIZ_QUESTIONS.length}</span>
-                <span>{Math.round(((currentStep + 1) / QUIZ_QUESTIONS.length) * 100)}%</span>
-              </div>
-              <div className="w-full h-2 bg-slate-800 rounded-full overflow-hidden">
-                <div
-                  className="h-full bg-gradient-to-r from-teal-500 to-[#84CC16] transition-all duration-300"
-                  style={{ width: `${((currentStep + 1) / QUIZ_QUESTIONS.length) * 100}%` }}
-                />
-              </div>
+            {/* Progress indicator */}
+            <div className="flex items-center justify-between text-xs font-bold text-slate-400">
+              <span>Question {currentStep + 1} of {QUIZ_QUESTIONS.length}</span>
+              <span className="text-[#84CC16]">Pass mark: 75%</span>
             </div>
 
-            {/* Question Card */}
+            <div className="w-full h-1.5 bg-slate-800 rounded-full overflow-hidden">
+              <div
+                className="h-full bg-gradient-to-r from-teal-500 to-[#84CC16] transition-all duration-300"
+                style={{ width: `${((currentStep + 1) / QUIZ_QUESTIONS.length) * 100}%` }}
+              />
+            </div>
+
+            {/* Question Text */}
             <div className="space-y-4">
-              <h3 className="text-base font-bold text-white leading-snug">{currentQ.question}</h3>
+              <h3 className="font-bold text-base text-white leading-snug">
+                {currentQ.question}
+              </h3>
 
               <div className="space-y-2.5">
                 {currentQ.options.map((opt, idx) => {
@@ -141,18 +155,18 @@ export const VolunteerQuizModal: React.FC<VolunteerQuizModalProps> = ({ onClose,
                   return (
                     <button
                       key={idx}
-                      onClick={() => handleSelectOption(currentQ.id, idx)}
-                      className={`w-full p-4 rounded-2xl border text-left text-xs font-semibold transition-all flex items-center justify-between ${
+                      onClick={() => handleSelectOption(idx)}
+                      className={`w-full p-4 rounded-2xl border text-left text-xs font-medium transition-all flex items-center justify-between ${
                         isSelected
-                          ? 'bg-teal-950/80 border-[#84CC16] text-[#84CC16] ring-1 ring-[#84CC16]/40'
-                          : 'bg-slate-950/60 border-slate-800 text-slate-300 hover:border-slate-700'
+                          ? 'bg-teal-950/90 border-[#84CC16] text-white shadow-lg ring-1 ring-[#84CC16]'
+                          : 'bg-slate-900/90 border-slate-800 text-slate-300 hover:border-slate-700'
                       }`}
                     >
                       <span>{opt}</span>
-                      <div className={`w-5 h-5 rounded-full border flex items-center justify-center text-[10px] ${
-                        isSelected ? 'border-[#84CC16] bg-[#84CC16] text-slate-950 font-bold' : 'border-slate-700'
+                      <div className={`w-5 h-5 rounded-full border flex items-center justify-center text-[10px] font-bold ${
+                        isSelected ? 'bg-[#84CC16] border-[#84CC16] text-slate-950' : 'border-slate-700 text-transparent'
                       }`}>
-                        {String.fromCharCode(65 + idx)}
+                        ✓
                       </div>
                     </button>
                   );
@@ -160,14 +174,34 @@ export const VolunteerQuizModal: React.FC<VolunteerQuizModalProps> = ({ onClose,
               </div>
             </div>
 
-            {/* Next / Submit Button */}
-            <button
-              disabled={selectedAnswers[currentQ.id] === undefined}
-              onClick={handleNext}
-              className="w-full py-3.5 bg-gradient-to-r from-teal-600 to-[#0D9488] hover:from-teal-500 hover:to-[#0F766E] disabled:opacity-50 text-white font-extrabold text-xs rounded-2xl shadow-lg transition-all"
-            >
-              {currentStep < QUIZ_QUESTIONS.length - 1 ? 'Next Question' : 'Submit Quiz & Verify Status'}
-            </button>
+            {/* Controls */}
+            <div className="flex items-center justify-between pt-2 border-t border-slate-800">
+              <button
+                onClick={handlePrev}
+                disabled={currentStep === 0}
+                className="px-4 py-2 bg-slate-900 border border-slate-800 text-slate-400 disabled:opacity-30 rounded-xl text-xs font-bold"
+              >
+                Previous
+              </button>
+
+              {currentStep < QUIZ_QUESTIONS.length - 1 ? (
+                <button
+                  onClick={handleNext}
+                  disabled={selectedAnswers[currentQ.id] === undefined}
+                  className="px-6 py-2.5 bg-teal-600 hover:bg-teal-500 disabled:opacity-40 text-white font-extrabold text-xs rounded-xl shadow transition-all"
+                >
+                  Next Question
+                </button>
+              ) : (
+                <button
+                  onClick={handleSubmitQuiz}
+                  disabled={selectedAnswers[currentQ.id] === undefined}
+                  className="px-6 py-2.5 bg-gradient-to-r from-teal-500 to-[#84CC16] hover:from-teal-400 hover:to-lime-400 disabled:opacity-40 text-slate-950 font-black text-xs rounded-xl shadow-lg transition-all"
+                >
+                  Submit Quiz & Verify Status
+                </button>
+              )}
+            </div>
           </div>
         ) : (
           <div className="text-center space-y-6 py-4">
@@ -186,7 +220,7 @@ export const VolunteerQuizModal: React.FC<VolunteerQuizModalProps> = ({ onClose,
 
                 <button
                   onClick={() => {
-                    onSuccess();
+                    onSuccess(score);
                     onClose();
                   }}
                   className="w-full py-4 bg-[#84CC16] hover:bg-lime-400 text-slate-950 font-black text-sm rounded-2xl shadow-xl transition-all"

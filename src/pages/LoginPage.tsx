@@ -1,15 +1,32 @@
 import React, { useState, useEffect } from 'react';
-import { Utensils, Shield, Users, Lock, Mail, ArrowRight, Award, ArrowLeft } from 'lucide-react';
+import { Utensils, Shield, Users, Lock, Mail, ArrowRight, Award, ArrowLeft, UserPlus, LogIn, CheckCircle2, AlertTriangle, Phone, Building, Truck, MapPin } from 'lucide-react';
 import { useFoodBridge } from '../context/FoodBridgeContext';
 import { UserRole } from '../types/foodbridge';
 import { VolunteerQuizModal } from '../components/VolunteerQuizModal';
 
 export const LoginPage: React.FC = () => {
-  const { login, setCurrentRole, targetLoginRole } = useFoodBridge();
+  const { login, setCurrentRole, targetLoginRole, passVolunteerQuiz } = useFoodBridge();
+
+  // Mode: Sign In vs Register
+  const [authMode, setAuthMode] = useState<'signin' | 'register'>('signin');
   const [selectedRole, setSelectedRole] = useState<UserRole>('donor');
+
+  // Sign In State
   const [email, setEmail] = useState('donor@foodbridge.org');
   const [password, setPassword] = useState('password123');
+
+  // Registration State
+  const [regName, setRegName] = useState('');
+  const [regPhone, setRegPhone] = useState('');
+  const [regEmail, setRegEmail] = useState('');
+  const [regPassword, setRegPassword] = useState('');
+  const [regEstablishment, setRegEstablishment] = useState('');
+  const [regVehicleType, setRegVehicleType] = useState('Two Wheeler (Bike)');
+  const [regAreaName, setRegAreaName] = useState('T. Nagar');
+
+  // Modal State for Volunteer Quiz Gate
   const [showQuizModal, setShowQuizModal] = useState<boolean>(false);
+  const [quizFailMessage, setQuizFailMessage] = useState<string | null>(null);
 
   useEffect(() => {
     if (targetLoginRole === 'volunteer' || targetLoginRole === 'admin' || targetLoginRole === 'donor') {
@@ -23,7 +40,7 @@ export const LoginPage: React.FC = () => {
     setEmail(`${role}@foodbridge.org`);
   };
 
-  const handleLoginSubmit = (e: React.FormEvent) => {
+  const handleSignInSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     login(selectedRole, email);
   };
@@ -32,15 +49,34 @@ export const LoginPage: React.FC = () => {
     login(role, `${role}@foodbridge.org`);
   };
 
+  const handleRegisterSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (selectedRole === 'volunteer') {
+      // New Volunteer Registration Gate: Must pass qualification quiz!
+      setQuizFailMessage(null);
+      setShowQuizModal(true);
+    } else {
+      // New Donor Registration
+      login('donor', regEmail || 'newdonor@foodbridge.org');
+    }
+  };
+
+  const handleQuizSuccess = (score?: number) => {
+    setShowQuizModal(false);
+    passVolunteerQuiz(score || 100);
+    login('volunteer', regEmail || 'newvolunteer@foodbridge.org');
+  };
+
   return (
     <div className="min-h-[calc(100vh-64px)] bg-[#FAF8F5] text-slate-900 flex items-center justify-center p-4 selection:bg-emerald-500 selection:text-white">
       <div className="max-w-4xl w-full grid grid-cols-1 md:grid-cols-2 gap-8 bg-white border border-slate-200/80 rounded-3xl p-6 sm:p-10 shadow-2xl overflow-hidden relative">
         
-        {/* Soft Background Glow Effects */}
+        {/* Soft Background Glows */}
         <div className="absolute top-0 right-0 w-80 h-80 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
         <div className="absolute bottom-0 left-0 w-80 h-80 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
 
-        {/* Left Side: Brand & Role Info */}
+        {/* Left Side: Brand & Overview */}
         <div className="space-y-6 flex flex-col justify-between relative z-10 border-b md:border-b-0 md:border-r border-slate-100 pb-6 md:pb-0 md:pr-6">
           <div>
             <button
@@ -57,51 +93,77 @@ export const LoginPage: React.FC = () => {
               </div>
               <div>
                 <h1 className="font-extrabold text-2xl tracking-tight text-slate-900">FoodBridge</h1>
-                <p className="text-xs text-emerald-700 font-bold uppercase tracking-wider">Role Authorization Portal</p>
+                <p className="text-xs text-emerald-700 font-bold uppercase tracking-wider">
+                  {authMode === 'signin' ? 'Existing User Sign In' : 'New User Account Registration'}
+                </p>
               </div>
             </div>
 
             <p className="text-slate-600 text-sm leading-relaxed font-medium">
-              Sign in with your authorized credentials to access your role workspace.
+              {authMode === 'signin'
+                ? 'Sign in with your credentials or select an instant demo account below.'
+                : 'Create your FoodBridge account. Volunteers must complete mandatory safety qualification.'}
             </p>
           </div>
 
           <div className="space-y-3 text-xs text-slate-700">
             <div className="flex items-center gap-2.5 bg-slate-50 p-3.5 rounded-2xl border border-slate-200">
               <Utensils className="w-4.5 h-4.5 text-emerald-600" />
-              <span><b>Donor Portal:</b> Place food requests & track live Swiggy orders.</span>
+              <span><b>Donors:</b> Submit surplus food & earn +100 welcome credit points.</span>
             </div>
             <div className="flex items-center gap-2.5 bg-slate-50 p-3.5 rounded-2xl border border-slate-200">
               <Users className="w-4.5 h-4.5 text-teal-600" />
-              <span><b>Volunteer App:</b> Accept dispatch tasks & complete hygiene proof.</span>
+              <span><b>Volunteers:</b> Must pass 4-question Food Safety Quiz (&ge; 75%) to qualify.</span>
             </div>
             <div className="flex items-center gap-2.5 bg-slate-50 p-3.5 rounded-2xl border border-slate-200">
               <Shield className="w-4.5 h-4.5 text-amber-600" />
-              <span><b>Admin Operations:</b> Live Leaflet map & SLA dispatch control desk.</span>
+              <span><b>Admin Operations:</b> Live SLA dispatch tracking & volunteer audit desk.</span>
             </div>
           </div>
 
           <div className="pt-2">
-            <button
-              onClick={() => setShowQuizModal(true)}
-              className="w-full py-3.5 bg-emerald-50 hover:bg-emerald-100 border border-emerald-300 text-emerald-900 text-xs font-extrabold rounded-2xl flex items-center justify-center gap-2 transition-all shadow-sm"
-            >
-              <Award className="w-4 h-4 text-emerald-700" />
-              <span>New Volunteer? Take Qualification Quiz</span>
-            </button>
+            <div className="p-3 bg-emerald-50 border border-emerald-300 rounded-2xl text-xs text-emerald-900 font-semibold flex items-center gap-2">
+              <CheckCircle2 className="w-4 h-4 text-emerald-700" />
+              <span>100% Verified Food Rescue Protocols</span>
+            </div>
           </div>
         </div>
 
-        {/* Right Side: Login Form */}
+        {/* Right Side: Auth Forms & Mode Switcher */}
         <div className="space-y-6 relative z-10 flex flex-col justify-center">
           
-          {/* Role Selector Tabs */}
-          <div className="grid grid-cols-3 gap-1 p-1.5 bg-slate-100 rounded-2xl border border-slate-200 text-xs font-bold text-center">
+          {/* Main Mode Toggle: Sign In vs Register */}
+          <div className="grid grid-cols-2 gap-1 p-1 bg-slate-100 rounded-2xl border border-slate-200 text-xs font-bold">
+            <button
+              type="button"
+              onClick={() => setAuthMode('signin')}
+              className={`py-3 rounded-xl flex items-center justify-center gap-2 transition-all ${
+                authMode === 'signin' ? 'bg-slate-900 text-white shadow-md font-extrabold' : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              <LogIn className="w-4 h-4" />
+              <span>Sign In (Existing User)</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setAuthMode('register')}
+              className={`py-3 rounded-xl flex items-center justify-center gap-2 transition-all ${
+                authMode === 'register' ? 'bg-[#0F5132] text-white shadow-md font-extrabold' : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              <UserPlus className="w-4 h-4" />
+              <span>Register (New User)</span>
+            </button>
+          </div>
+
+          {/* Role Tabs */}
+          <div className="grid grid-cols-3 gap-1 p-1 bg-slate-100 rounded-2xl border border-slate-200 text-xs font-bold text-center">
             <button
               type="button"
               onClick={() => handleRoleSelect('donor')}
-              className={`py-2.5 rounded-xl transition-all ${
-                selectedRole === 'donor' ? 'bg-[#0F5132] text-white shadow-md font-extrabold' : 'text-slate-600 hover:text-slate-900'
+              className={`py-2 rounded-xl transition-all ${
+                selectedRole === 'donor' ? 'bg-[#0F5132] text-white shadow font-extrabold' : 'text-slate-600 hover:text-slate-900'
               }`}
             >
               Donor
@@ -109,8 +171,8 @@ export const LoginPage: React.FC = () => {
             <button
               type="button"
               onClick={() => handleRoleSelect('volunteer')}
-              className={`py-2.5 rounded-xl transition-all ${
-                selectedRole === 'volunteer' ? 'bg-teal-700 text-white shadow-md font-extrabold' : 'text-slate-600 hover:text-slate-900'
+              className={`py-2 rounded-xl transition-all ${
+                selectedRole === 'volunteer' ? 'bg-teal-700 text-white shadow font-extrabold' : 'text-slate-600 hover:text-slate-900'
               }`}
             >
               Volunteer
@@ -118,83 +180,211 @@ export const LoginPage: React.FC = () => {
             <button
               type="button"
               onClick={() => handleRoleSelect('admin')}
-              className={`py-2.5 rounded-xl transition-all ${
-                selectedRole === 'admin' ? 'bg-slate-900 text-white shadow-md font-extrabold' : 'text-slate-600 hover:text-slate-900'
+              className={`py-2 rounded-xl transition-all ${
+                selectedRole === 'admin' ? 'bg-slate-900 text-white shadow font-extrabold' : 'text-slate-600 hover:text-slate-900'
               }`}
             >
               Admin
             </button>
           </div>
 
-          {/* Login Form */}
-          <form onSubmit={handleLoginSubmit} className="space-y-4">
-            <div>
-              <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
-                {selectedRole.toUpperCase()} Email Address
-              </label>
-              <div className="relative">
-                <Mail className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5" />
+          {/* Form 1: Existing User Sign In */}
+          {authMode === 'signin' && (
+            <form onSubmit={handleSignInSubmit} className="space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-slate-700 uppercase mb-1">
+                  {selectedRole.toUpperCase()} Email Address
+                </label>
+                <div className="relative">
+                  <Mail className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5" />
+                  <input
+                    type="email"
+                    required
+                    value={email}
+                    onChange={e => setEmail(e.target.value)}
+                    className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-300 rounded-xl text-xs font-semibold text-slate-900 focus:ring-2 focus:ring-emerald-500 focus:bg-white"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 uppercase mb-1">Password</label>
+                <div className="relative">
+                  <Lock className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5" />
+                  <input
+                    type="password"
+                    required
+                    value={password}
+                    onChange={e => setPassword(e.target.value)}
+                    className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-300 rounded-xl text-xs font-semibold text-slate-900 focus:ring-2 focus:ring-emerald-500 focus:bg-white"
+                  />
+                </div>
+              </div>
+
+              <button
+                type="submit"
+                className="w-full py-4 bg-gradient-to-r from-[#0F5132] to-[#059669] hover:from-[#064E3B] hover:to-[#047857] text-white font-black text-xs uppercase tracking-wider rounded-2xl shadow-xl flex items-center justify-center gap-2 transition-all"
+              >
+                <span>Sign In as {selectedRole.toUpperCase()}</span>
+                <ArrowRight className="w-4 h-4" />
+              </button>
+            </form>
+          )}
+
+          {/* Form 2: New User Registration */}
+          {authMode === 'register' && (
+            <form onSubmit={handleRegisterSubmit} className="space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-slate-700 uppercase mb-1">Full Name</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. Ananya Sharma"
+                  value={regName}
+                  onChange={e => setRegName(e.target.value)}
+                  className="w-full px-4 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-semibold"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 uppercase mb-1">Phone Number</label>
+                <div className="relative">
+                  <Phone className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
+                  <input
+                    type="text"
+                    required
+                    placeholder="+91 98400 12345"
+                    value={regPhone}
+                    onChange={e => setRegPhone(e.target.value)}
+                    className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-semibold"
+                  />
+                </div>
+              </div>
+
+              {selectedRole === 'donor' && (
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 uppercase mb-1">Establishment / Marriage Hall / Hotel</label>
+                  <div className="relative">
+                    <Building className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
+                    <input
+                      type="text"
+                      required
+                      placeholder="e.g. Royal Palace Marriage Hall"
+                      value={regEstablishment}
+                      onChange={e => setRegEstablishment(e.target.value)}
+                      className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-semibold"
+                    />
+                  </div>
+                </div>
+              )}
+
+              {selectedRole === 'volunteer' && (
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 uppercase mb-1">Vehicle Type</label>
+                    <select
+                      value={regVehicleType}
+                      onChange={e => setRegVehicleType(e.target.value)}
+                      className="w-full px-3 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-semibold"
+                    >
+                      <option value="Two Wheeler (Bike)">Two Wheeler (Bike)</option>
+                      <option value="Three Wheeler (Auto)">Three Wheeler (Auto)</option>
+                      <option value="Four Wheeler (Van)">Four Wheeler (Van)</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 uppercase mb-1">Preferred Locality</label>
+                    <select
+                      value={regAreaName}
+                      onChange={e => setRegAreaName(e.target.value)}
+                      className="w-full px-3 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-semibold"
+                    >
+                      <option value="T. Nagar">T. Nagar</option>
+                      <option value="Velachery">Velachery</option>
+                      <option value="Guindy">Guindy</option>
+                      <option value="Mylapore">Mylapore</option>
+                    </select>
+                  </div>
+                </div>
+              )}
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 uppercase mb-1">Email Address</label>
                 <input
                   type="email"
                   required
-                  value={email}
-                  onChange={e => setEmail(e.target.value)}
-                  className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-300 rounded-xl text-xs font-semibold text-slate-900 focus:ring-2 focus:ring-emerald-500 focus:bg-white"
+                  placeholder="name@domain.com"
+                  value={regEmail}
+                  onChange={e => setRegEmail(e.target.value)}
+                  className="w-full px-4 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-semibold"
                 />
               </div>
-            </div>
 
-            <div>
-              <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Password</label>
-              <div className="relative">
-                <Lock className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5" />
+              <div>
+                <label className="block text-xs font-bold text-slate-700 uppercase mb-1">Password</label>
                 <input
                   type="password"
                   required
-                  value={password}
-                  onChange={e => setPassword(e.target.value)}
-                  className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-300 rounded-xl text-xs font-semibold text-slate-900 focus:ring-2 focus:ring-emerald-500 focus:bg-white"
+                  placeholder="••••••••"
+                  value={regPassword}
+                  onChange={e => setRegPassword(e.target.value)}
+                  className="w-full px-4 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-semibold"
                 />
               </div>
-            </div>
 
-            <button
-              type="submit"
-              className="w-full py-4 bg-gradient-to-r from-[#0F5132] to-[#059669] hover:from-[#064E3B] hover:to-[#047857] text-white font-black text-xs uppercase tracking-wider rounded-2xl shadow-xl flex items-center justify-center gap-2 transition-all scale-100 hover:scale-[1.01]"
-              id="login-submit-btn"
-            >
-              <span>Authorize & Sign In as {selectedRole.toUpperCase()}</span>
-              <ArrowRight className="w-4 h-4" />
-            </button>
-          </form>
+              {selectedRole === 'volunteer' && (
+                <div className="p-3 bg-amber-50 border border-amber-300 rounded-xl text-[11px] text-amber-900 space-y-1">
+                  <span className="font-extrabold flex items-center gap-1">
+                    <Award className="w-4 h-4 text-amber-700" /> Mandatory Volunteer Criteria Gate
+                  </span>
+                  <p>
+                    New volunteers must score <b>75% or higher</b> on the Food Safety & Golden Hour Qualification Test to verify account status.
+                  </p>
+                </div>
+              )}
+
+              <button
+                type="submit"
+                className="w-full py-4 bg-gradient-to-r from-emerald-600 to-teal-700 hover:from-emerald-500 hover:to-teal-600 text-white font-black text-xs uppercase tracking-wider rounded-2xl shadow-xl flex items-center justify-center gap-2 transition-all"
+              >
+                <span>
+                  {selectedRole === 'volunteer' ? 'Take Qualification Quiz & Register' : 'Complete Registration (+100 Pts)'}
+                </span>
+                <ArrowRight className="w-4 h-4" />
+              </button>
+            </form>
+          )}
 
           {/* Quick 1-Click Demo Logins */}
-          <div className="border-t border-slate-100 pt-4 space-y-2 text-center">
-            <span className="text-[10px] uppercase font-bold text-slate-500 tracking-wider">Instant 1-Click Demo Login</span>
-            <div className="flex items-center justify-center gap-2 text-xs">
-              <button
-                type="button"
-                onClick={() => handleQuickDemoLogin('donor')}
-                className="px-3.5 py-1.5 bg-amber-50 text-amber-900 border border-amber-300 rounded-xl font-bold hover:bg-amber-100 transition-all"
-              >
-                Donor Demo
-              </button>
-              <button
-                type="button"
-                onClick={() => handleQuickDemoLogin('volunteer')}
-                className="px-3.5 py-1.5 bg-teal-50 text-teal-900 border border-teal-300 rounded-xl font-bold hover:bg-teal-100 transition-all"
-              >
-                Volunteer Demo
-              </button>
-              <button
-                type="button"
-                onClick={() => handleQuickDemoLogin('admin')}
-                className="px-3.5 py-1.5 bg-slate-900 text-white rounded-xl font-bold hover:bg-slate-800 transition-all"
-              >
-                Admin Demo
-              </button>
+          {authMode === 'signin' && (
+            <div className="border-t border-slate-100 pt-4 space-y-2 text-center">
+              <span className="text-[10px] uppercase font-bold text-slate-500 tracking-wider">Instant 1-Click Demo Login</span>
+              <div className="flex items-center justify-center gap-2 text-xs">
+                <button
+                  type="button"
+                  onClick={() => handleQuickDemoLogin('donor')}
+                  className="px-3.5 py-1.5 bg-amber-50 text-amber-900 border border-amber-300 rounded-xl font-bold hover:bg-amber-100 transition-all"
+                >
+                  Donor Demo
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleQuickDemoLogin('volunteer')}
+                  className="px-3.5 py-1.5 bg-teal-50 text-teal-900 border border-teal-300 rounded-xl font-bold hover:bg-teal-100 transition-all"
+                >
+                  Volunteer Demo
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleQuickDemoLogin('admin')}
+                  className="px-3.5 py-1.5 bg-slate-900 text-white rounded-xl font-bold hover:bg-slate-800 transition-all"
+                >
+                  Admin Demo
+                </button>
+              </div>
             </div>
-          </div>
+          )}
 
         </div>
       </div>
@@ -202,9 +392,7 @@ export const LoginPage: React.FC = () => {
       {showQuizModal && (
         <VolunteerQuizModal
           onClose={() => setShowQuizModal(false)}
-          onSuccess={() => {
-            login('volunteer', 'volunteer@foodbridge.org');
-          }}
+          onSuccess={handleQuizSuccess}
         />
       )}
     </div>
