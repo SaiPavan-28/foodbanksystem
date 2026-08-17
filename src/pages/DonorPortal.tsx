@@ -7,12 +7,12 @@ import { LiveChatModal } from '../components/LiveChatModal';
 import confetti from 'canvas-confetti';
 
 export const DonorPortal: React.FC = () => {
-  const { requests, addDonationRequest, updateRequestStatus, routeToFallbackShelter, donorPoints, donorTier, volunteers } = useFoodBridge();
+  const { authUser, requests, addDonationRequest, updateRequestStatus, routeToFallbackShelter, donorPoints, donorTier, volunteers } = useFoodBridge();
   const [activeTab, setActiveTab] = useState<'create' | 'my-requests' | 'rewards'>('create');
   
   // Form State
-  const [donorName, setDonorName] = useState('Sri Grand Marriage Hall');
-  const [donorPhone, setDonorPhone] = useState('+91 98401 22334');
+  const [donorName, setDonorName] = useState(authUser?.name || 'Sri Grand Marriage Hall');
+  const [donorPhone, setDonorPhone] = useState(authUser?.phone || '+91 98401 22334');
   const [foodType, setFoodType] = useState<FoodType>('Veg Meals');
   const [quantityKg, setQuantityKg] = useState<number>(25);
   const [estimatedServings, setEstimatedServings] = useState<number>(80);

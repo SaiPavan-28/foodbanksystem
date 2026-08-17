@@ -254,6 +254,29 @@ export const FoodBridgeProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       quizPassed: foundUser.quizPassed
     };
 
+    if (foundUser.role === 'volunteer') {
+      setVolunteers(prev => {
+        if (prev.some(v => v.id === foundUser.id)) return prev;
+        const newVolProfile: Volunteer = {
+          id: foundUser.id,
+          name: foundUser.name,
+          phone: foundUser.phone || '+91 98400 12345',
+          status: 'available',
+          certificationLevel: 'Level-1 Verified Rescue Volunteer',
+          vehicleType: (foundUser.vehicleType as any) || 'Two Wheeler (Bike)',
+          vehicleCapacityKg: 25,
+          currentLocation: { lat: 13.0400, lng: 80.2300, address: 'T. Nagar, Chennai', areaName: 'T. Nagar' },
+          rating: 5.0,
+          totalRescues: 0,
+          volunteerPoints: foundUser.points || 50,
+          foodSafetyBadges: ['Food Hygiene Certified', 'Golden Hour Qualified'],
+          quizPassed: true,
+          quizScore: 100
+        };
+        return [newVolProfile, ...prev];
+      });
+    }
+
     setAuthUser(sessionUser);
     setCurrentRole(role);
     return { success: true };
@@ -291,6 +314,29 @@ export const FoodBridgeProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       tier: created.tier,
       quizPassed: created.quizPassed
     };
+
+    if (created.role === 'volunteer') {
+      setVolunteers(prev => {
+        if (prev.some(v => v.id === created.id)) return prev;
+        const newVolProfile: Volunteer = {
+          id: created.id,
+          name: created.name,
+          phone: created.phone || '+91 98400 12345',
+          status: 'available',
+          certificationLevel: 'Level-1 Verified Rescue Volunteer',
+          vehicleType: (created.vehicleType as any) || 'Two Wheeler (Bike)',
+          vehicleCapacityKg: 25,
+          currentLocation: { lat: 13.0400, lng: 80.2300, address: 'T. Nagar, Chennai', areaName: 'T. Nagar' },
+          rating: 5.0,
+          totalRescues: 0,
+          volunteerPoints: created.points || 50,
+          foodSafetyBadges: ['Food Hygiene Certified', 'Golden Hour Qualified'],
+          quizPassed: true,
+          quizScore: 100
+        };
+        return [newVolProfile, ...prev];
+      });
+    }
 
     setAuthUser(sessionUser);
     setCurrentRole(created.role);

@@ -8,12 +8,37 @@ import { LiveChatModal } from '../components/LiveChatModal';
 import confetti from 'canvas-confetti';
 
 export const VolunteerApp: React.FC = () => {
-  const { volunteers, requests, updateRequestStatus, assignVolunteerToRequest, toggleVolunteerStatus, trainingModules, completeTrainingModule, volunteerPoints } = useFoodBridge();
+  const { authUser, volunteers, requests, updateRequestStatus, assignVolunteerToRequest, toggleVolunteerStatus, trainingModules, completeTrainingModule, volunteerPoints } = useFoodBridge();
   const [activeTab, setActiveTab] = useState<'tasks' | 'incoming' | 'training' | 'profile'>('incoming');
   const [showQuizModal, setShowQuizModal] = useState<boolean>(false);
   const [activeChatRequest, setActiveChatRequest] = useState<DonationRequest | null>(null);
 
-  const currentVolunteer = volunteers[0];
+  const currentVolunteer = volunteers.find(v => v.id === authUser?.id || v.name === authUser?.name) || {
+    id: authUser?.id || 'vol-1',
+    name: authUser?.name || 'Rescue Volunteer',
+    phone: authUser?.phone || '+91 98400 12345',
+    status: 'available' as VolunteerStatus,
+    certificationLevel: 'Level-1 Verified Rescue Volunteer',
+    vehicleType: (authUser?.vehicleType as any) || 'Two Wheeler (Bike)',
+    vehicleCapacityKg: 25,
+    currentLocation: { lat: 13.0400, lng: 80.2300, address: 'T. Nagar, Chennai', areaName: 'T. Nagar' },
+    rating: 5.0,
+    totalRescues: 0,
+    volunteerPoints: authUser?.points || volunteerPoints || 50,
+    foodSafetyBadges: ['Food Hygiene Certified', 'Golden Hour Qualified'],
+    quizPassed: true,
+    quizScore: 100
+  };
+
+  const getInitials = (name: string) => {
+    const parts = name.trim().split(' ');
+    if (parts.length >= 2) {
+      return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
+    }
+    return name.slice(0, 2).toUpperCase();
+  };
+
+  const volunteerInitials = getInitials(currentVolunteer.name);
 
   const [checklist, setChecklist] = useState({
     packagingVerified: true,
@@ -27,7 +52,7 @@ export const VolunteerApp: React.FC = () => {
   const [recipientName, setRecipientName] = useState('Anitha (Koyambedu Shelter)');
 
   const unassignedRequests = requests.filter(r => r.status === 'requested' || r.status === 'pooled');
-  const assignedRequests = requests.filter(r => r.assignedVolunteerId === currentVolunteer.id || r.status === 'accepted' || r.status === 'in_transit');
+  const assignedRequests = requests.filter(r => r.assignedVolunteerId === currentVolunteer.id || (r.assignedVolunteerId && r.assignedVolunteerId === authUser?.id));
 
   const handleAcceptOrder = (reqId: string) => {
     assignVolunteerToRequest(reqId, currentVolunteer.id);
@@ -87,7 +112,7 @@ export const VolunteerApp: React.FC = () => {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="w-12 h-12 rounded-2xl bg-teal-950 border-2 border-[#84CC16] flex items-center justify-center font-bold text-lg text-[#84CC16] shadow-md">
-                KR
+                {volunteerInitials}
               </div>
               <div>
                 <h1 className="font-extrabold text-lg tracking-tight text-white">{currentVolunteer.name}</h1>

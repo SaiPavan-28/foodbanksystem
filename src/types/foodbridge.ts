@@ -101,7 +101,7 @@ export interface Volunteer {
   name: string;
   phone: string;
   status: VolunteerStatus;
-  certificationLevel: 'Basic' | 'Certified Safety Handler' | 'Master Rescue Specialist';
+  certificationLevel: 'Level-1 Verified Rescue Volunteer' | 'Basic' | 'Certified Safety Handler' | 'Master Rescue Specialist';
   vehicleType: VehicleType;
   vehicleCapacityKg: number;
   currentLocation: Location;
