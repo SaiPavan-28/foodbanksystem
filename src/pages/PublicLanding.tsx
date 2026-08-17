@@ -1,9 +1,11 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { ShieldCheck, HeartHandshake, Clock, Users, ArrowRight, Award, Zap, CheckCircle2, TrendingUp, Utensils, Heart, LogIn } from 'lucide-react';
 import { useFoodBridge } from '../context/FoodBridgeContext';
+import { FoodReliefModal } from '../components/FoodReliefModal';
 
 export const PublicLanding: React.FC = () => {
   const { openLoginForRole, stats } = useFoodBridge();
+  const [showFoodReliefModal, setShowFoodReliefModal] = useState<boolean>(false);
 
   return (
     <div className="min-h-screen bg-[#FAF8F5] text-slate-900 selection:bg-emerald-500 selection:text-white">
@@ -34,38 +36,51 @@ export const PublicLanding: React.FC = () => {
                   </span>
                 </h1>
                 <p className="text-slate-600 text-base sm:text-lg leading-relaxed font-medium pt-2">
-                  Transforming surplus food into timely Golden Hour rescues. Connecting donors, field volunteers, vehicles, and hunger hotspots with zero delay.
+                  Transforming surplus food into timely Golden Hour rescues. Connecting donors, field volunteers, shelters, and hunger hotspots with zero delay.
                 </p>
               </div>
 
-              {/* Action Buttons (Featuring Sign In / Register) */}
-              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 pt-2">
+              {/* Action Buttons (Including Request Food Relief for Shelters & Beneficiaries) */}
+              <div className="flex flex-wrap items-center gap-3 pt-2">
+                
+                {/* 1. Request Food Relief (For Shelters & Needy) */}
+                <button
+                  onClick={() => setShowFoodReliefModal(true)}
+                  className="px-6 py-4 bg-gradient-to-r from-emerald-600 to-teal-700 hover:from-emerald-500 hover:to-teal-600 text-white font-black text-sm rounded-2xl shadow-xl flex items-center justify-center gap-2 transition-all scale-100 hover:scale-105"
+                  id="hero-request-food-relief-btn"
+                >
+                  <HeartHandshake className="w-4.5 h-4.5" />
+                  <span>Request Food Relief (For Shelters/Needy)</span>
+                </button>
+
+                {/* 2. Donate Surplus Food */}
                 <button
                   onClick={() => openLoginForRole('donor')}
-                  className="px-8 py-4 bg-gradient-to-r from-[#0F5132] to-[#059669] hover:from-[#064E3B] hover:to-[#047857] text-white font-black text-sm rounded-2xl shadow-xl shadow-emerald-950/20 flex items-center justify-center gap-2 transition-all scale-100 hover:scale-105"
+                  className="px-6 py-4 bg-[#0F5132] hover:bg-[#064E3B] text-white font-black text-sm rounded-2xl shadow-lg flex items-center justify-center gap-2 transition-all hover:scale-105"
                 >
                   <Utensils className="w-4 h-4" />
                   <span>Donate Surplus Food</span>
-                  <ArrowRight className="w-4 h-4" />
                 </button>
 
+                {/* 3. Join as Volunteer */}
                 <button
                   onClick={() => openLoginForRole('volunteer')}
-                  className="px-7 py-4 bg-teal-950 hover:bg-teal-900 border border-teal-700 text-teal-200 font-bold text-sm rounded-2xl shadow-lg flex items-center justify-center gap-2 transition-all"
+                  className="px-6 py-4 bg-teal-950 hover:bg-teal-900 border border-teal-700 text-teal-200 font-bold text-sm rounded-2xl shadow-md flex items-center justify-center gap-2 transition-all"
                 >
                   <Users className="w-4 h-4 text-[#84CC16]" />
                   <span>Join as Volunteer</span>
                 </button>
 
-                {/* Hero Sign In / Register Button */}
+                {/* 4. Sign In / Register */}
                 <button
                   onClick={() => openLoginForRole('donor')}
-                  className="px-6 py-4 bg-white hover:bg-emerald-50 border-2 border-emerald-600 text-emerald-900 font-black text-sm rounded-2xl shadow-md flex items-center justify-center gap-2 transition-all hover:scale-105"
+                  className="px-5 py-4 bg-white hover:bg-emerald-50 border-2 border-emerald-600 text-emerald-900 font-black text-sm rounded-2xl shadow-md flex items-center justify-center gap-2 transition-all hover:scale-105"
                   id="hero-sign-in-register-btn"
                 >
-                  <LogIn className="w-4.5 h-4.5 text-emerald-700 stroke-[3]" />
+                  <LogIn className="w-4 h-4 text-emerald-700 stroke-[3]" />
                   <span>Sign In / Register</span>
                 </button>
+
               </div>
 
               {/* Quick Feature Badges */}
@@ -99,7 +114,7 @@ export const PublicLanding: React.FC = () => {
                     </div>
                     <div>
                       <span className="font-extrabold text-xs text-slate-900 block">No Food Waste Platform</span>
-                      <span className="text-[10px] text-slate-500 font-medium">Connecting Donors & Volunteers</span>
+                      <span className="text-[10px] text-slate-500 font-medium">Connecting Donors, Volunteers & Shelters</span>
                     </div>
                   </div>
                   <span className="bg-emerald-600 text-white text-[10px] uppercase font-black px-2.5 py-1 rounded-lg">
@@ -186,6 +201,10 @@ export const PublicLanding: React.FC = () => {
           <p className="text-slate-500">Transforming manual helpline & spreadsheet coordination into real-time food rescue intelligence.</p>
         </div>
       </footer>
+
+      {showFoodReliefModal && (
+        <FoodReliefModal onClose={() => setShowFoodReliefModal(false)} />
+      )}
 
     </div>
   );
