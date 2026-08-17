@@ -63,6 +63,7 @@ export interface Location {
 
 export interface DonationRequest {
   id: string;
+  donorId?: string;
   donorName: string;
   donorPhone: string;
   foodType: FoodType;

@@ -53,6 +53,7 @@ export const DonorPortal: React.FC = () => {
     if (areaName === 'Mylapore') { lat = 13.0550; lng = 80.2500; }
 
     addDonationRequest({
+      donorId: authUser?.id,
       donorName,
       donorPhone,
       foodType,
@@ -79,6 +80,13 @@ export const DonorPortal: React.FC = () => {
     confetti({ particleCount: 100, spread: 80, origin: { y: 0.6 } });
   };
 
+  const myRequests = requests.filter(r => 
+    (r.donorId && r.donorId === authUser?.id) || 
+    r.donorName === authUser?.name ||
+    (authUser?.establishmentName && r.donorName === authUser?.establishmentName) ||
+    (!authUser || authUser.role === 'admin')
+  );
+
   const samplePhotos = [
     { label: 'Veg Meals', url: 'https://images.unsplash.com/photo-1555244162-803834f70033?w=600&auto=format&fit=crop&q=60' },
     { label: 'Biryani/Non-Veg', url: 'https://images.unsplash.com/photo-1563379091339-03b21ab4a4f8?w=600&auto=format&fit=crop&q=60' },
@@ -95,7 +103,7 @@ export const DonorPortal: React.FC = () => {
             <div className="flex items-center gap-2 text-amber-300 font-bold text-xs uppercase tracking-wider mb-1">
               <Utensils className="w-4 h-4" /> Donor Self-Service Portal
             </div>
-            <h1 className="text-3xl font-extrabold tracking-tight">Donate Food & Track Live Rescue Steps</h1>
+            <h1 className="text-3xl font-extrabold tracking-tight">{donorName}</h1>
             <p className="text-emerald-100 text-xs mt-1">
               Connected 4-step delivery tracker with direct Donor & Recipient confirmation controls.
             </p>
@@ -116,7 +124,7 @@ export const DonorPortal: React.FC = () => {
                 activeTab === 'my-requests' ? 'bg-amber-500 text-slate-950 shadow' : 'text-emerald-200 hover:text-white'
               }`}
             >
-              My Orders ({requests.length})
+              My Orders ({myRequests.length})
             </button>
             <button
               onClick={() => setActiveTab('rewards')}
@@ -311,188 +319,204 @@ export const DonorPortal: React.FC = () => {
         {/* Tab 2: Redesigned Swiggy Delivery Tracker (4 Connected Stepper Dots) */}
         {activeTab === 'my-requests' && (
           <div className="space-y-6">
-            <h2 className="text-xl font-bold text-slate-900">Your Live Swiggy Delivery Tracker</h2>
+            <h2 className="text-xl font-bold text-slate-900">Your Live Swiggy Delivery Tracker ({myRequests.length})</h2>
 
-            {requests.map(req => {
-              const vol = volunteers.find(v => v.id === req.assignedVolunteerId);
+            {myRequests.length === 0 ? (
+              <div className="bg-white border border-slate-200/80 rounded-3xl p-10 shadow-xl text-center space-y-4">
+                <Utensils className="w-12 h-12 text-emerald-600 mx-auto" />
+                <h3 className="text-lg font-bold text-slate-900">No Food Rescue Orders Submitted Yet</h3>
+                <p className="text-xs text-slate-500 max-w-sm mx-auto">
+                  You haven't submitted any surplus food requests under <b>{donorName}</b>. Click below to post your first donation!
+                </p>
+                <button
+                  onClick={() => setActiveTab('create')}
+                  className="px-6 py-3 bg-gradient-to-r from-emerald-600 to-emerald-700 text-white font-black text-xs rounded-xl shadow-lg hover:scale-105 transition-all"
+                >
+                  + Submit Food Donation Request
+                </button>
+              </div>
+            ) : (
+              myRequests.map(req => {
+                const vol = volunteers.find(v => v.id === req.assignedVolunteerId);
 
-              const isStep1Done = true;
-              const isStep2Done = req.status === 'accepted' || req.status === 'in_transit' || req.status === 'delivered';
-              const isStep3Done = req.status === 'in_transit' || req.status === 'delivered';
-              const isStep4Done = req.status === 'delivered';
+                const isStep1Done = true;
+                const isStep2Done = req.status === 'accepted' || req.status === 'in_transit' || req.status === 'delivered';
+                const isStep3Done = req.status === 'in_transit' || req.status === 'delivered';
+                const isStep4Done = req.status === 'delivered';
 
-              return (
-                <div key={req.id} className="bg-white border border-slate-200/80 rounded-3xl p-6 sm:p-8 shadow-xl space-y-6">
-                  
-                  {/* Header info */}
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-4">
-                    <div className="flex items-center gap-3">
-                      <img src={req.photoUrl} alt={req.foodType} className="w-16 h-16 rounded-2xl object-cover border border-slate-200 shadow-sm" />
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <h3 className="font-extrabold text-slate-900 text-base">{req.donorName}</h3>
-                          <span className="bg-emerald-100 text-emerald-800 text-[10px] font-extrabold px-2.5 py-0.5 rounded-full border border-emerald-300">
-                            +{req.earnedPoints || 300} Credit Points
-                          </span>
-                        </div>
-                        <p className="text-xs text-slate-500">{req.foodType} • <b>{req.quantityKg} kg</b> • {req.location.areaName}</p>
-                      </div>
-                    </div>
-                    <GoldenHourBadge deadlineIso={req.goldenHourDeadline} />
-                  </div>
-
-                  {/* Connected Dot Stepper */}
-                  <div className="bg-slate-900 text-white p-6 rounded-3xl border border-slate-800 space-y-6 shadow-2xl">
+                return (
+                  <div key={req.id} className="bg-white border border-slate-200/80 rounded-3xl p-6 sm:p-8 shadow-xl space-y-6">
                     
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <Navigation className="w-5 h-5 text-emerald-400 animate-pulse" />
-                        <span className="font-extrabold text-sm text-emerald-300 tracking-wide">Live Order Tracker & Confirmation Controls</span>
+                    {/* Header info */}
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-4">
+                      <div className="flex items-center gap-3">
+                        <img src={req.photoUrl} alt={req.foodType} className="w-16 h-16 rounded-2xl object-cover border border-slate-200 shadow-sm" />
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <h3 className="font-extrabold text-slate-900 text-base">{req.donorName}</h3>
+                            <span className="bg-emerald-100 text-emerald-800 text-[10px] font-extrabold px-2.5 py-0.5 rounded-full border border-emerald-300">
+                              +{req.earnedPoints || 300} Credit Points
+                            </span>
+                          </div>
+                          <p className="text-xs text-slate-500">{req.foodType} • <b>{req.quantityKg} kg</b> • {req.location.areaName}</p>
+                        </div>
                       </div>
-                      
-                      {vol && (
-                        <button
-                          onClick={() => setActiveChatRequest(req)}
-                          className="px-3.5 py-1.5 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-xs rounded-xl shadow flex items-center gap-1.5 transition-all"
-                        >
-                          <MessageSquare className="w-4 h-4" />
-                          <span>Chat with {vol.name.split(' ')[0]}</span>
-                        </button>
-                      )}
+                      <GoldenHourBadge deadlineIso={req.goldenHourDeadline} />
                     </div>
 
-                    {/* 4 Connected Stepper Dots Bar */}
-                    <div className="relative px-4 py-2">
+                    {/* Connected Dot Stepper */}
+                    <div className="bg-slate-900 text-white p-6 rounded-3xl border border-slate-800 space-y-6 shadow-2xl">
                       
-                      {/* Connecting Line Track */}
-                      <div className="absolute top-5 left-10 right-10 h-1 bg-slate-800 rounded-full -z-0">
-                        <div
-                          className="h-full bg-gradient-to-r from-emerald-500 via-teal-400 to-amber-500 transition-all duration-500 rounded-full"
-                          style={{
-                            width: isStep4Done ? '100%' : isStep3Done ? '66%' : isStep2Done ? '33%' : '0%'
-                          }}
-                        />
-                      </div>
-
-                      {/* 4 Stepper Nodes */}
-                      <div className="grid grid-cols-4 gap-2 relative z-10 text-center">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <Navigation className="w-5 h-5 text-emerald-400 animate-pulse" />
+                          <span className="font-extrabold text-sm text-emerald-300 tracking-wide">Live Order Tracker & Confirmation Controls</span>
+                        </div>
                         
-                        {/* Dot 1 */}
-                        <div className="flex flex-col items-center gap-2">
-                          <div className="w-9 h-9 rounded-full bg-emerald-500 text-slate-950 font-black flex items-center justify-center border-4 border-slate-900 shadow-lg">
-                            <Check className="w-5 h-5 stroke-[3]" />
-                          </div>
-                          <div className="text-[11px] font-bold text-emerald-400">1. Request Submitted</div>
-                          <span className="text-[9px] text-slate-400 font-mono">Order Placed</span>
+                        {vol && (
+                          <button
+                            onClick={() => setActiveChatRequest(req)}
+                            className="px-3.5 py-1.5 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-xs rounded-xl shadow flex items-center gap-1.5 transition-all"
+                          >
+                            <MessageSquare className="w-4 h-4" />
+                            <span>Chat with {vol.name.split(' ')[0]}</span>
+                          </button>
+                        )}
+                      </div>
+
+                      {/* 4 Connected Stepper Dots Bar */}
+                      <div className="relative px-4 py-2">
+                        
+                        {/* Connecting Line Track */}
+                        <div className="absolute top-5 left-10 right-10 h-1 bg-slate-800 rounded-full -z-0">
+                          <div
+                            className="h-full bg-gradient-to-r from-emerald-500 via-teal-400 to-amber-500 transition-all duration-500 rounded-full"
+                            style={{
+                              width: isStep4Done ? '100%' : isStep3Done ? '66%' : isStep2Done ? '33%' : '0%'
+                            }}
+                          />
                         </div>
 
-                        {/* Dot 2 */}
-                        <div className="flex flex-col items-center gap-2">
-                          <div className={`w-9 h-9 rounded-full font-black flex items-center justify-center border-4 border-slate-900 transition-all ${
-                            isStep2Done ? 'bg-emerald-500 text-slate-950 shadow-lg' : 'bg-slate-800 text-slate-500'
-                          }`}>
-                            {isStep2Done ? <Check className="w-5 h-5 stroke-[3]" /> : '2'}
+                        {/* 4 Stepper Nodes */}
+                        <div className="grid grid-cols-4 gap-2 relative z-10 text-center">
+                          
+                          {/* Dot 1 */}
+                          <div className="flex flex-col items-center gap-2">
+                            <div className="w-9 h-9 rounded-full bg-emerald-500 text-slate-950 font-black flex items-center justify-center border-4 border-slate-900 shadow-lg">
+                              <Check className="w-5 h-5 stroke-[3]" />
+                            </div>
+                            <div className="text-[11px] font-bold text-emerald-400">1. Request Submitted</div>
+                            <span className="text-[9px] text-slate-400 font-mono">Order Placed</span>
                           </div>
-                          <div className={`text-[11px] font-bold ${isStep2Done ? 'text-emerald-400' : 'text-slate-500'}`}>
-                            2. Volunteer Matched
-                          </div>
-                          <span className="text-[9px] text-slate-400 font-mono">
-                            {vol ? `${vol.name.split(' ')[0]} (${vol.vehicleType.split(' ')[0]})` : 'Awaiting Match'}
-                          </span>
-                        </div>
 
-                        {/* Dot 3 */}
-                        <div className="flex flex-col items-center gap-2">
-                          <div className={`w-9 h-9 rounded-full font-black flex items-center justify-center border-4 border-slate-900 transition-all ${
-                            isStep3Done ? 'bg-teal-400 text-slate-950 shadow-lg' : 'bg-slate-800 text-slate-500'
-                          }`}>
-                            {isStep3Done ? <Check className="w-5 h-5 stroke-[3]" /> : '3'}
+                          {/* Dot 2 */}
+                          <div className="flex flex-col items-center gap-2">
+                            <div className={`w-9 h-9 rounded-full font-black flex items-center justify-center border-4 border-slate-900 transition-all ${
+                              isStep2Done ? 'bg-emerald-500 text-slate-950 shadow-lg' : 'bg-slate-800 text-slate-500'
+                            }`}>
+                              {isStep2Done ? <Check className="w-5 h-5 stroke-[3]" /> : '2'}
+                            </div>
+                            <div className={`text-[11px] font-bold ${isStep2Done ? 'text-emerald-400' : 'text-slate-500'}`}>
+                              2. Volunteer Matched
+                            </div>
+                            <span className="text-[9px] text-slate-400 font-mono">
+                              {vol ? `${vol.name.split(' ')[0]} (${vol.vehicleType.split(' ')[0]})` : 'Awaiting Match'}
+                            </span>
                           </div>
-                          <div className={`text-[11px] font-bold ${isStep3Done ? 'text-teal-300' : 'text-slate-500'}`}>
-                            3. Food Handed Over
-                          </div>
-                          <span className="text-[9px] text-slate-400 font-mono">Donor Pickup Confirmed</span>
-                        </div>
 
-                        {/* Dot 4 */}
-                        <div className="flex flex-col items-center gap-2">
-                          <div className={`w-9 h-9 rounded-full font-black flex items-center justify-center border-4 border-slate-900 transition-all ${
-                            isStep4Done ? 'bg-amber-400 text-slate-950 shadow-lg' : 'bg-slate-800 text-slate-500'
-                          }`}>
-                            {isStep4Done ? <Check className="w-5 h-5 stroke-[3]" /> : '4'}
+                          {/* Dot 3 */}
+                          <div className="flex flex-col items-center gap-2">
+                            <div className={`w-9 h-9 rounded-full font-black flex items-center justify-center border-4 border-slate-900 transition-all ${
+                              isStep3Done ? 'bg-teal-400 text-slate-950 shadow-lg' : 'bg-slate-800 text-slate-500'
+                            }`}>
+                              {isStep3Done ? <Check className="w-5 h-5 stroke-[3]" /> : '3'}
+                            </div>
+                            <div className={`text-[11px] font-bold ${isStep3Done ? 'text-teal-300' : 'text-slate-500'}`}>
+                              3. Food Handed Over
+                            </div>
+                            <span className="text-[9px] text-slate-400 font-mono">Donor Pickup Confirmed</span>
                           </div>
-                          <div className={`text-[11px] font-bold ${isStep4Done ? 'text-amber-400' : 'text-slate-500'}`}>
-                            4. Delivered & Received
+
+                          {/* Dot 4 */}
+                          <div className="flex flex-col items-center gap-2">
+                            <div className={`w-9 h-9 rounded-full font-black flex items-center justify-center border-4 border-slate-900 transition-all ${
+                              isStep4Done ? 'bg-amber-400 text-slate-950 shadow-lg' : 'bg-slate-800 text-slate-500'
+                            }`}>
+                              {isStep4Done ? <Check className="w-5 h-5 stroke-[3]" /> : '4'}
+                            </div>
+                            <div className={`text-[11px] font-bold ${isStep4Done ? 'text-amber-400' : 'text-slate-500'}`}>
+                              4. Delivered & Received
+                            </div>
+                            <span className="text-[9px] text-slate-400 font-mono">Hotspot Verified</span>
                           </div>
-                          <span className="text-[9px] text-slate-400 font-mono">Hotspot Verified</span>
+
                         </div>
+                      </div>
+
+                      {/* Step Action Confirmation Controls */}
+                      <div className="bg-slate-950 p-4 rounded-2xl border border-slate-800 space-y-3">
+                        
+                        {/* Step 3 Action: Donor Manual Confirmation */}
+                        {req.status === 'accepted' && (
+                          <div className="p-3 bg-teal-950/70 border border-teal-500/60 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                            <div>
+                              <h4 className="font-extrabold text-xs text-teal-300 flex items-center gap-1.5">
+                                <PackageCheck className="w-4 h-4 text-teal-400" />
+                                Step 3 Donor Confirmation Required
+                              </h4>
+                              <p className="text-[10px] text-slate-300">
+                                Volunteer <b>{vol?.name}</b> is at your location. Click below once food is handed over!
+                              </p>
+                            </div>
+                            <button
+                              onClick={() => handleDonorConfirmPickup(req.id)}
+                              className="px-4 py-2.5 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-xs rounded-xl shadow-lg transition-all whitespace-nowrap"
+                            >
+                              ✓ Confirm Food Handed Over to Volunteer
+                            </button>
+                          </div>
+                        )}
+
+                        {/* Step 4 Action: Recipient / Shelter Manual Confirmation */}
+                        {req.status === 'in_transit' && (
+                          <div className="p-3 bg-amber-950/70 border border-amber-500/60 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                            <div>
+                              <h4 className="font-extrabold text-xs text-amber-300 flex items-center gap-1.5">
+                                <HeartHandshake className="w-4 h-4 text-amber-400" />
+                                Step 4 Recipient / Shelter Confirmation
+                              </h4>
+                              <p className="text-[10px] text-slate-300">
+                                Food in transit to Koyambedu Shelter. Click below to verify final receipt!
+                              </p>
+                            </div>
+                            <button
+                              onClick={() => handleRecipientConfirmDelivery(req.id)}
+                              className="px-4 py-2.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs rounded-xl shadow-lg transition-all whitespace-nowrap"
+                            >
+                              ✓ Confirm Food Received at Hotspot
+                            </button>
+                          </div>
+                        )}
+
+                        {req.status === 'delivered' && (
+                          <div className="p-3 bg-emerald-950/60 border border-emerald-500/60 rounded-xl text-xs text-emerald-300 font-extrabold text-center flex items-center justify-center gap-2">
+                            <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                            <span>All 4 Steps Completed! +{req.earnedPoints || 300} Donor Credit Points Awarded.</span>
+                          </div>
+                        )}
 
                       </div>
                     </div>
 
-                    {/* Step Action Confirmation Controls */}
-                    <div className="bg-slate-950 p-4 rounded-2xl border border-slate-800 space-y-3">
-                      
-                      {/* Step 3 Action: Donor Manual Confirmation */}
-                      {req.status === 'accepted' && (
-                        <div className="p-3 bg-teal-950/70 border border-teal-500/60 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                          <div>
-                            <h4 className="font-extrabold text-xs text-teal-300 flex items-center gap-1.5">
-                              <PackageCheck className="w-4 h-4 text-teal-400" />
-                              Step 3 Donor Confirmation Required
-                            </h4>
-                            <p className="text-[10px] text-slate-300">
-                              Volunteer <b>{vol?.name}</b> is at your location. Click below once food is handed over!
-                            </p>
-                          </div>
-                          <button
-                            onClick={() => handleDonorConfirmPickup(req.id)}
-                            className="px-4 py-2.5 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-xs rounded-xl shadow-lg transition-all whitespace-nowrap"
-                          >
-                            ✓ Confirm Food Handed Over to Volunteer
-                          </button>
-                        </div>
-                      )}
-
-                      {/* Step 4 Action: Recipient / Shelter Manual Confirmation */}
-                      {req.status === 'in_transit' && (
-                        <div className="p-3 bg-amber-950/70 border border-amber-500/60 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                          <div>
-                            <h4 className="font-extrabold text-xs text-amber-300 flex items-center gap-1.5">
-                              <HeartHandshake className="w-4 h-4 text-amber-400" />
-                              Step 4 Recipient / Shelter Confirmation
-                            </h4>
-                            <p className="text-[10px] text-slate-300">
-                              Food in transit to Koyambedu Shelter. Click below to verify final receipt!
-                            </p>
-                          </div>
-                          <button
-                            onClick={() => handleRecipientConfirmDelivery(req.id)}
-                            className="px-4 py-2.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs rounded-xl shadow-lg transition-all whitespace-nowrap"
-                          >
-                            ✓ Confirm Food Received at Hotspot
-                          </button>
-                        </div>
-                      )}
-
-                      {req.status === 'delivered' && (
-                        <div className="p-3 bg-emerald-950/60 border border-emerald-500/60 rounded-xl text-xs text-emerald-300 font-extrabold text-center flex items-center justify-center gap-2">
-                          <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-                          <span>All 4 Steps Completed! +{req.earnedPoints || 300} Donor Credit Points Awarded.</span>
-                        </div>
-                      )}
-
-                    </div>
+                    {req.status === 'delivered' && (
+                      <button onClick={() => setSelectedCertRequest(req)} className="ml-auto text-xs font-bold bg-emerald-600 text-white px-4 py-2.5 rounded-xl flex items-center gap-1.5 shadow">
+                        <Award className="w-4 h-4 text-amber-300" /> View Impact Certificate
+                      </button>
+                    )}
                   </div>
-
-                  {req.status === 'delivered' && (
-                    <button onClick={() => setSelectedCertRequest(req)} className="ml-auto text-xs font-bold bg-emerald-600 text-white px-4 py-2.5 rounded-xl flex items-center gap-1.5 shadow">
-                      <Award className="w-4 h-4 text-amber-300" /> View Impact Certificate
-                    </button>
-                  )}
-                </div>
-              );
-            })}
+                );
+              })
+            )}
           </div>
         )}
 

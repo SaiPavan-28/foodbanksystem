@@ -397,6 +397,7 @@ export const FoodBridgeProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     const newReq: DonationRequest = {
       ...requestData,
       id,
+      donorId: requestData.donorId || authUser?.id,
       status: isSmallQuantity ? 'pooled' : 'requested',
       isSmallQuantity,
       earnedPoints,
