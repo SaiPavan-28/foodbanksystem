@@ -62,8 +62,7 @@ export const NGOPortal: React.FC = () => {
   const myRequests = requests.filter(r => 
     (r.donorId && r.donorId === authUser?.id) || 
     r.donorName === authUser?.name ||
-    (authUser?.establishmentName && r.donorName === authUser?.establishmentName) ||
-    r.requestType === 'shelter_need'
+    (authUser?.establishmentName && r.donorName === authUser?.establishmentName)
   );
 
   const totalMealsReceived = myRequests

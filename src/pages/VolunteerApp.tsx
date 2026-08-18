@@ -61,6 +61,10 @@ export const VolunteerApp: React.FC = () => {
   const assignedRequests = requests.filter(r => r.assignedVolunteerId === currentVolunteer.id || (r.assignedVolunteerId && r.assignedVolunteerId === authUser?.id));
 
   const handleAcceptOrder = (reqId: string) => {
+    if (currentVolunteer.status === 'busy') {
+      alert("⚠️ You have an active rescue mission! Complete & receive NGO delivery confirmation for your current order before accepting a new request.");
+      return;
+    }
     assignVolunteerToRequest(reqId, currentVolunteer.id);
     setActiveTab('tasks');
     confetti({ particleCount: 70, spread: 50, origin: { y: 0.6 } });
@@ -290,9 +294,18 @@ export const VolunteerApp: React.FC = () => {
 
                   <button
                     onClick={() => handleAcceptOrder(req.id)}
-                    className="w-full py-3.5 bg-[#84CC16] hover:bg-lime-400 text-slate-950 font-black text-sm rounded-2xl shadow-xl flex items-center justify-center gap-2 transition-all hover:scale-105"
+                    disabled={currentVolunteer.status === 'busy'}
+                    className={`w-full py-3.5 font-black text-sm rounded-2xl shadow-xl flex items-center justify-center gap-2 transition-all ${
+                      currentVolunteer.status === 'busy'
+                        ? 'bg-slate-800 text-slate-400 border border-slate-700 cursor-not-allowed'
+                        : 'bg-[#84CC16] hover:bg-lime-400 text-slate-950 hover:scale-105'
+                    }`}
                   >
-                    <span>Accept Rescue Order & Start Step 2 (+70 Pts)</span>
+                    <span>
+                      {currentVolunteer.status === 'busy'
+                        ? '🔒 Active Mission in Progress — Complete current order first'
+                        : 'Accept Rescue Order & Start Step 2 (+70 Pts)'}
+                    </span>
                   </button>
                 </div>
               ))

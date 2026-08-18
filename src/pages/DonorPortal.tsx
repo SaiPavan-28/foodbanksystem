@@ -477,24 +477,21 @@ export const DonorPortal: React.FC = () => {
                           </div>
                         )}
 
-                        {/* Step 4 Action: Recipient / Shelter Manual Confirmation */}
+                        {/* Step 4 Status: Awaiting NGO Recipient Confirmation */}
                         {req.status === 'in_transit' && (
                           <div className="p-3 bg-amber-950/70 border border-amber-500/60 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                             <div>
                               <h4 className="font-extrabold text-xs text-amber-300 flex items-center gap-1.5">
-                                <HeartHandshake className="w-4 h-4 text-amber-400" />
-                                Step 4 Recipient / Shelter Confirmation
+                                <HeartHandshake className="w-4 h-4 text-amber-400 animate-pulse" />
+                                Step 4: Awaiting NGO / Shelter Recipient Confirmation
                               </h4>
                               <p className="text-[10px] text-slate-300">
-                                Food in transit to Koyambedu Shelter. Click below to verify final receipt!
+                                Food is in transit to <b>{req.matchedShelterName || 'Koyambedu Shelter'}</b>. The NGO in-charge will confirm delivery receipt in their portal.
                               </p>
                             </div>
-                            <button
-                              onClick={() => handleRecipientConfirmDelivery(req.id)}
-                              className="px-4 py-2.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs rounded-xl shadow-lg transition-all whitespace-nowrap"
-                            >
-                              ✓ Confirm Food Received at Hotspot
-                            </button>
+                            <span className="px-3 py-1.5 bg-amber-900/80 text-amber-300 border border-amber-700/80 font-bold text-[10px] rounded-lg shrink-0">
+                              ⏳ Pending NGO Confirmation
+                            </span>
                           </div>
                         )}
 

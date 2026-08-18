@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, Send, MessageSquare, ShieldCheck, Sparkles, Lock, Shield } from 'lucide-react';
+import { X, Send, MessageSquare, ShieldCheck, Sparkles, MessageCircle } from 'lucide-react';
 import { useFoodBridge } from '../context/FoodBridgeContext';
 
 interface LiveChatModalProps {
@@ -20,37 +20,17 @@ export const LiveChatModal: React.FC<LiveChatModalProps> = ({
   const { chatMessages, sendChatMessage, authUser } = useFoodBridge();
   const currentRole = authUser?.role || 'donor';
 
-  // Role-based channel secrecy filtering
-  const availableChannels: Array<{ id: 'vol_donor' | 'vol_ngo' | 'donor_ngo'; label: string }> = [];
+  // All 3 parallel channels accessible to all participants
+  const availableChannels: Array<{ id: 'vol_donor' | 'vol_ngo' | 'donor_ngo'; label: string }> = [
+    { id: 'vol_donor', label: 'Volunteer ↔ Donor' },
+    { id: 'vol_ngo', label: 'Volunteer ↔ NGO' },
+    { id: 'donor_ngo', label: 'Donor ↔ NGO' }
+  ];
 
-  if (currentRole === 'volunteer') {
-    availableChannels.push(
-      { id: 'vol_donor', label: 'Volunteer ↔ Donor' },
-      { id: 'vol_ngo', label: 'Volunteer ↔ NGO' }
-    );
-  } else if (currentRole === 'donor') {
-    availableChannels.push(
-      { id: 'vol_donor', label: 'Donor ↔ Volunteer' },
-      { id: 'donor_ngo', label: 'Donor ↔ NGO' }
-    );
-  } else if (currentRole === 'ngo') {
-    availableChannels.push(
-      { id: 'vol_ngo', label: 'NGO ↔ Volunteer' },
-      { id: 'donor_ngo', label: 'NGO ↔ Donor' }
-    );
-  } else {
-    // Admin role: see all 3 channels
-    availableChannels.push(
-      { id: 'vol_donor', label: 'Vol ↔ Donor' },
-      { id: 'vol_ngo', label: 'Vol ↔ NGO' },
-      { id: 'donor_ngo', label: 'Donor ↔ NGO' }
-    );
-  }
-
-  const [activeChannel, setActiveChannel] = useState<'vol_donor' | 'vol_ngo' | 'donor_ngo'>(availableChannels[0].id);
+  const [activeChannel, setActiveChannel] = useState<'vol_donor' | 'vol_ngo' | 'donor_ngo'>('vol_donor');
   const [inputText, setInputText] = useState('');
 
-  // Filter messages specifically for the selected active private channel
+  // Filter messages for active channel
   const filteredMessages = chatMessages.filter(
     m => m.requestId === requestId && (m.channel === activeChannel || (!m.channel && activeChannel === 'vol_donor'))
   );
@@ -94,9 +74,9 @@ export const LiveChatModal: React.FC<LiveChatModalProps> = ({
               </div>
               <div>
                 <div className="flex items-center gap-1.5">
-                  <h3 className="font-extrabold text-sm text-white">Private Rescue Chat</h3>
+                  <h3 className="font-extrabold text-sm text-white">Parallel 3-Way Rescue Chat</h3>
                   <span className="bg-emerald-950 text-emerald-400 border border-emerald-600/60 text-[9px] font-black uppercase px-2 py-0.5 rounded-full flex items-center gap-1">
-                    <Lock className="w-2.5 h-2.5" /> Channel Secrecy
+                    <Sparkles className="w-2.5 h-2.5" /> Parallel Channels
                   </span>
                 </div>
                 <p className="text-[10px] text-slate-400">
@@ -112,8 +92,8 @@ export const LiveChatModal: React.FC<LiveChatModalProps> = ({
             </button>
           </div>
 
-          {/* Role-Gated Channel Tabs */}
-          <div className={`grid grid-cols-${availableChannels.length} gap-1 p-1 bg-slate-900 rounded-xl border border-slate-800 text-[10px] font-bold text-center`}>
+          {/* 3 Parallel Channels Selector */}
+          <div className="grid grid-cols-3 gap-1 p-1 bg-slate-900 rounded-xl border border-slate-800 text-[10px] font-bold text-center">
             {availableChannels.map(ch => (
               <button
                 key={ch.id}
@@ -132,11 +112,10 @@ export const LiveChatModal: React.FC<LiveChatModalProps> = ({
         <div className="flex-1 p-4 overflow-y-auto space-y-3 bg-slate-950/50 text-xs">
           {filteredMessages.length === 0 ? (
             <div className="text-center py-12 space-y-2 text-slate-500">
-              <Lock className="w-8 h-8 text-emerald-500 mx-auto opacity-40 animate-pulse" />
-              <p className="font-bold text-slate-300">Private Channel ({availableChannels.find(c => c.id === activeChannel)?.label})</p>
+              <MessageCircle className="w-8 h-8 text-emerald-500 mx-auto opacity-40 animate-pulse" />
+              <p className="font-bold text-slate-300">Parallel Chat ({availableChannels.find(c => c.id === activeChannel)?.label})</p>
               <p className="text-[10px] max-w-xs mx-auto text-slate-400">
-                Messages in this channel are end-to-end isolated for secrecy. 
-                {currentRole === 'volunteer' && " Donors and NGOs cannot see other private conversations."}
+                You can switch between any of the 3 channels to chat in parallel with Donors, Volunteers, or NGOs.
               </p>
             </div>
           ) : (

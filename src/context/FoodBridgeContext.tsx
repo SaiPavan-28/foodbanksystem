@@ -515,7 +515,7 @@ export const FoodBridgeProvider: React.FC<{ children: React.ReactNode }> = ({ ch
             setVolunteers(vPrev =>
               vPrev.map(vol =>
                 vol.id === req.assignedVolunteerId || vol.id === target.assignedVolunteerId
-                  ? { ...vol, volunteerPoints: vol.volunteerPoints + 70, totalRescues: vol.totalRescues + 1, status: 'available' }
+                  ? { ...vol, volunteerPoints: vol.volunteerPoints + 70, totalRescues: vol.totalRescues + 1, status: 'available', currentAssignedRequestId: undefined }
                   : vol
               )
             );
