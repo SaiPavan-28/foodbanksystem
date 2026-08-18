@@ -432,48 +432,67 @@ export const VolunteerApp: React.FC = () => {
                 </p>
               </div>
             ) : (
-              completedMissions.map(req => (
-                <div key={req.id} className="bg-white text-slate-900 rounded-3xl border border-slate-200 shadow-xl overflow-hidden space-y-4 p-5">
-                  <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-                    <div>
-                      <span className="text-[10px] font-extrabold uppercase text-emerald-700 bg-emerald-100 px-2.5 py-0.5 rounded-full border border-emerald-300">
-                        ✓ Step 4 Delivered & NGO Verified
+              completedMissions.map(req => {
+                const isShelterNeed = req.requestType === 'shelter_need';
+                const matchedDonorOffer = isShelterNeed 
+                  ? requests.find(r => r.id === req.matchedDonorRequestId || r.matchedDonorRequestId === req.id)
+                  : null;
+
+                const displayDonorName = isShelterNeed
+                  ? (matchedDonorOffer?.donorName || req.matchedDonorName || 'Sri Grand Marriage Hall')
+                  : req.donorName;
+
+                const displayDonorAddress = isShelterNeed
+                  ? (matchedDonorOffer?.location.address || '45 Pondy Bazaar, T. Nagar, Chennai')
+                  : req.location.address;
+
+                const displayShelterName = isShelterNeed
+                  ? req.donorName
+                  : (req.matchedShelterName || 'Hope Children Shelter & NGO');
+
+                return (
+                  <div key={req.id} className="bg-white text-slate-900 rounded-3xl border border-slate-200 shadow-xl overflow-hidden space-y-4 p-5">
+                    <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                      <div>
+                        <span className="text-[10px] font-extrabold uppercase text-emerald-700 bg-emerald-100 px-2.5 py-0.5 rounded-full border border-emerald-300">
+                          ✓ Step 4 Delivered & NGO Verified
+                        </span>
+                        <h4 className="font-extrabold text-base text-slate-900 mt-1">Order #{req.id}</h4>
+                      </div>
+                      <span className="text-xs font-black text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-xl border border-emerald-200">
+                        +70 Pts Awarded
                       </span>
-                      <h4 className="font-extrabold text-base text-slate-900 mt-1">Order #{req.id}</h4>
                     </div>
-                    <span className="text-xs font-black text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-xl border border-emerald-200">
-                      +70 Pts Awarded
-                    </span>
-                  </div>
 
-                  <div className="grid grid-cols-1 gap-2 text-xs">
-                    <div className="p-3 bg-slate-50 rounded-2xl border border-slate-200/80 space-y-1">
-                      <span className="text-[10px] font-bold uppercase text-slate-400 block">1. Food Donor</span>
-                      <div className="font-extrabold text-slate-800 text-sm flex items-center justify-between">
-                        <span>{req.donorName}</span>
-                        <span className="text-xs text-slate-500 font-normal">{req.location.areaName}</span>
+                    <div className="grid grid-cols-1 gap-2 text-xs">
+                      <div className="p-3 bg-slate-50 rounded-2xl border border-slate-200/80 space-y-1">
+                        <span className="text-[10px] font-bold uppercase text-slate-400 block">1. Food Donor</span>
+                        <div className="font-extrabold text-slate-800 text-sm flex items-center justify-between">
+                          <span>{displayDonorName}</span>
+                          <span className="text-xs text-slate-500 font-normal">{req.location.areaName}</span>
+                        </div>
+                        <p className="text-slate-500 text-[11px]">{displayDonorAddress}</p>
                       </div>
-                      <p className="text-slate-500 text-[11px]">{req.location.address}</p>
-                    </div>
 
-                    <div className="p-3 bg-emerald-50/70 rounded-2xl border border-emerald-200/80 space-y-1">
-                      <span className="text-[10px] font-bold uppercase text-emerald-700 block">2. Food Given</span>
-                      <div className="font-extrabold text-emerald-950 flex items-center justify-between">
-                        <span>{req.foodType}</span>
-                        <span className="text-emerald-700 font-bold">{req.quantityKg} kg (~{req.estimatedServings} meals)</span>
+                      <div className="p-3 bg-emerald-50/70 rounded-2xl border border-emerald-200/80 space-y-1">
+                        <span className="text-[10px] font-bold uppercase text-emerald-700 block">2. Food Given</span>
+                        <div className="font-extrabold text-emerald-950 flex items-center justify-between">
+                          <span>{req.foodType}</span>
+                          <span className="text-emerald-700 font-bold">{req.quantityKg} kg (~{req.estimatedServings} meals)</span>
+                        </div>
                       </div>
-                    </div>
 
-                    <div className="p-3 bg-teal-50/70 rounded-2xl border border-teal-200/80 space-y-1">
-                      <span className="text-[10px] font-bold uppercase text-teal-700 block">3. NGO / Shelter Destination</span>
-                      <div className="font-extrabold text-teal-950 flex items-center justify-between">
-                        <span>{req.matchedShelterName || 'Hope Children Shelter & NGO'}</span>
-                        <span className="text-xs text-teal-700 font-bold">Confirmed Received</span>
+                      <div className="p-3 bg-teal-50/70 rounded-2xl border border-teal-200/80 space-y-1">
+                        <span className="text-[10px] font-bold uppercase text-teal-700 block">3. NGO / Shelter Destination</span>
+                        <div className="font-extrabold text-teal-950 flex items-center justify-between">
+                          <span>{displayShelterName}</span>
+                          <span className="text-xs text-teal-700 font-bold">Confirmed Received</span>
+                        </div>
                       </div>
                     </div>
                   </div>
-                </div>
-              ))
+                );
+              })
             )}
           </div>
         )}

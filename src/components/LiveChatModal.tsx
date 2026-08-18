@@ -17,8 +17,18 @@ export const LiveChatModal: React.FC<LiveChatModalProps> = ({
   ngoName = 'Hope Children Shelter & NGO',
   onClose
 }) => {
-  const { chatMessages, sendChatMessage, authUser } = useFoodBridge();
+  const { chatMessages, sendChatMessage, authUser, requests } = useFoodBridge();
   const currentRole = authUser?.role || 'donor';
+
+  // Find linked request pair (Donor offer <-> NGO shelter need)
+  const targetReq = requests.find(r => r.id === requestId);
+  const linkedRequestIds = new Set<string>([requestId]);
+  if (targetReq?.matchedDonorRequestId) linkedRequestIds.add(targetReq.matchedDonorRequestId);
+  requests.forEach(r => {
+    if (r.matchedDonorRequestId === requestId || (targetReq && r.matchedShelterName && (r.matchedShelterName === targetReq.donorName || r.donorName === targetReq.matchedShelterName))) {
+      linkedRequestIds.add(r.id);
+    }
+  });
 
   // Dynamic 2-Tab Participant-Centric Channels
   const availableChannels: Array<{ id: 'vol_donor' | 'vol_ngo' | 'donor_ngo'; label: string }> = [];
@@ -50,9 +60,9 @@ export const LiveChatModal: React.FC<LiveChatModalProps> = ({
   const [activeChannel, setActiveChannel] = useState<'vol_donor' | 'vol_ngo' | 'donor_ngo'>(availableChannels[0].id);
   const [inputText, setInputText] = useState('');
 
-  // Filter messages for active channel
+  // Filter messages for active channel across linked request IDs
   const filteredMessages = chatMessages.filter(
-    m => m.requestId === requestId && (m.channel === activeChannel || (!m.channel && activeChannel === 'vol_donor'))
+    m => linkedRequestIds.has(m.requestId) && (m.channel === activeChannel || (!m.channel && activeChannel === 'vol_donor'))
   );
 
   const quickChips = activeChannel === 'vol_donor'
