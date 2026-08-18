@@ -9,7 +9,7 @@ import confetti from 'canvas-confetti';
 
 export const VolunteerApp: React.FC = () => {
   const { authUser, volunteers, requests, updateRequestStatus, assignVolunteerToRequest, toggleVolunteerStatus, trainingModules, completeTrainingModule, volunteerPoints } = useFoodBridge();
-  const [activeTab, setActiveTab] = useState<'tasks' | 'incoming' | 'training' | 'profile'>('incoming');
+  const [activeTab, setActiveTab] = useState<'tasks' | 'incoming' | 'completed' | 'training' | 'profile'>('incoming');
   const [showQuizModal, setShowQuizModal] = useState<boolean>(false);
   const [activeChatRequest, setActiveChatRequest] = useState<DonationRequest | null>(null);
 
@@ -58,7 +58,15 @@ export const VolunteerApp: React.FC = () => {
   );
   
   const unmatchedShelterNeeds = requests.filter(r => r.status === 'needy_demand');
-  const assignedRequests = requests.filter(r => r.assignedVolunteerId === currentVolunteer.id || (r.assignedVolunteerId && r.assignedVolunteerId === authUser?.id));
+  const activeMissions = requests.filter(r => 
+    (r.assignedVolunteerId === currentVolunteer.id || (r.assignedVolunteerId && r.assignedVolunteerId === authUser?.id)) &&
+    r.status !== 'delivered'
+  );
+
+  const completedMissions = requests.filter(r => 
+    (r.assignedVolunteerId === currentVolunteer.id || (r.assignedVolunteerId && r.assignedVolunteerId === authUser?.id)) &&
+    r.status === 'delivered'
+  );
 
   const handleAcceptOrder = (reqId: string) => {
     if (currentVolunteer.status === 'busy') {
@@ -164,7 +172,7 @@ export const VolunteerApp: React.FC = () => {
           </div>
 
           {/* Sub Nav Tabs */}
-          <div className="grid grid-cols-3 gap-1 p-1 bg-teal-950/90 rounded-2xl border border-teal-700/60 text-center text-xs font-bold">
+          <div className="grid grid-cols-4 gap-1 p-1 bg-teal-950/90 rounded-2xl border border-teal-700/60 text-center text-[11px] font-bold">
             <button
               onClick={() => setActiveTab('incoming')}
               className={`py-2 rounded-xl transition-all ${activeTab === 'incoming' ? 'bg-[#84CC16] text-slate-950 shadow font-black' : 'text-teal-300'}`}
@@ -175,7 +183,13 @@ export const VolunteerApp: React.FC = () => {
               onClick={() => setActiveTab('tasks')}
               className={`py-2 rounded-xl transition-all ${activeTab === 'tasks' ? 'bg-[#0D9488] text-white shadow font-black' : 'text-teal-300'}`}
             >
-              My Missions ({assignedRequests.length})
+              Active ({activeMissions.length})
+            </button>
+            <button
+              onClick={() => setActiveTab('completed')}
+              className={`py-2 rounded-xl transition-all ${activeTab === 'completed' ? 'bg-[#0D9488] text-white shadow font-black' : 'text-teal-300'}`}
+            >
+              Completed ({completedMissions.length})
             </button>
             <button
               onClick={() => setActiveTab('training')}
@@ -318,14 +332,14 @@ export const VolunteerApp: React.FC = () => {
         {/* Tab 2: My Active Missions */}
         {activeTab === 'tasks' && (
           <div className="space-y-6">
-            {assignedRequests.length === 0 ? (
+            {activeMissions.length === 0 ? (
               <div className="bg-white p-8 rounded-3xl border border-teal-200 text-center space-y-3 shadow-md">
                 <ShieldCheck className="w-12 h-12 text-teal-600 mx-auto" />
                 <h3 className="font-bold text-slate-800 text-base">No Active Accepted Missions</h3>
                 <p className="text-xs text-slate-500">Go to "Incoming" tab to accept nearby Swiggy requests.</p>
               </div>
             ) : (
-              assignedRequests.map(req => (
+              activeMissions.map(req => (
                 <div key={req.id} className="bg-white text-slate-900 rounded-3xl border border-teal-200 shadow-xl overflow-hidden space-y-4">
                   
                   <div className="bg-teal-950 p-4 text-white flex items-center justify-between">
@@ -396,7 +410,75 @@ export const VolunteerApp: React.FC = () => {
           </div>
         )}
 
-        {/* Tab 3: Training */}
+        {/* Tab 3: Completed Tasks History */}
+        {activeTab === 'completed' && (
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="font-extrabold text-slate-900 text-base flex items-center gap-2">
+                <CheckCircle2 className="w-5 h-5 text-emerald-600" />
+                Completed Rescue Tasks History
+              </h3>
+              <span className="text-[10px] text-emerald-800 font-bold uppercase bg-emerald-100 px-2.5 py-0.5 rounded-full border border-emerald-300">
+                {completedMissions.length} Rescues Completed
+              </span>
+            </div>
+
+            {completedMissions.length === 0 ? (
+              <div className="bg-white p-8 rounded-3xl border border-slate-200 text-center space-y-3 shadow-md">
+                <PackageCheck className="w-12 h-12 text-slate-400 mx-auto" />
+                <h3 className="font-bold text-slate-800 text-base">No Completed Missions Yet</h3>
+                <p className="text-xs text-slate-500">
+                  Once an NGO confirms food delivery receipt (Step 4), completed rescues will be archived here.
+                </p>
+              </div>
+            ) : (
+              completedMissions.map(req => (
+                <div key={req.id} className="bg-white text-slate-900 rounded-3xl border border-slate-200 shadow-xl overflow-hidden space-y-4 p-5">
+                  <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                    <div>
+                      <span className="text-[10px] font-extrabold uppercase text-emerald-700 bg-emerald-100 px-2.5 py-0.5 rounded-full border border-emerald-300">
+                        ✓ Step 4 Delivered & NGO Verified
+                      </span>
+                      <h4 className="font-extrabold text-base text-slate-900 mt-1">Order #{req.id}</h4>
+                    </div>
+                    <span className="text-xs font-black text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-xl border border-emerald-200">
+                      +70 Pts Awarded
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-1 gap-2 text-xs">
+                    <div className="p-3 bg-slate-50 rounded-2xl border border-slate-200/80 space-y-1">
+                      <span className="text-[10px] font-bold uppercase text-slate-400 block">1. Food Donor</span>
+                      <div className="font-extrabold text-slate-800 text-sm flex items-center justify-between">
+                        <span>{req.donorName}</span>
+                        <span className="text-xs text-slate-500 font-normal">{req.location.areaName}</span>
+                      </div>
+                      <p className="text-slate-500 text-[11px]">{req.location.address}</p>
+                    </div>
+
+                    <div className="p-3 bg-emerald-50/70 rounded-2xl border border-emerald-200/80 space-y-1">
+                      <span className="text-[10px] font-bold uppercase text-emerald-700 block">2. Food Given</span>
+                      <div className="font-extrabold text-emerald-950 flex items-center justify-between">
+                        <span>{req.foodType}</span>
+                        <span className="text-emerald-700 font-bold">{req.quantityKg} kg (~{req.estimatedServings} meals)</span>
+                      </div>
+                    </div>
+
+                    <div className="p-3 bg-teal-50/70 rounded-2xl border border-teal-200/80 space-y-1">
+                      <span className="text-[10px] font-bold uppercase text-teal-700 block">3. NGO / Shelter Destination</span>
+                      <div className="font-extrabold text-teal-950 flex items-center justify-between">
+                        <span>{req.matchedShelterName || 'Hope Children Shelter & NGO'}</span>
+                        <span className="text-xs text-teal-700 font-bold">Confirmed Received</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        )}
+
+        {/* Tab 4: Training */}
         {activeTab === 'training' && (
           <div className="space-y-4">
             <div className="bg-white p-5 rounded-3xl border border-teal-200 shadow space-y-2">

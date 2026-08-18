@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, Send, MessageSquare, ShieldCheck, Sparkles, MessageCircle } from 'lucide-react';
+import { X, Send, MessageSquare, ShieldCheck, Sparkles, User, Building, HeartHandshake } from 'lucide-react';
 import { useFoodBridge } from '../context/FoodBridgeContext';
 
 interface LiveChatModalProps {
@@ -20,14 +20,34 @@ export const LiveChatModal: React.FC<LiveChatModalProps> = ({
   const { chatMessages, sendChatMessage, authUser } = useFoodBridge();
   const currentRole = authUser?.role || 'donor';
 
-  // All 3 parallel channels accessible to all participants
-  const availableChannels: Array<{ id: 'vol_donor' | 'vol_ngo' | 'donor_ngo'; label: string }> = [
-    { id: 'vol_donor', label: 'Volunteer ↔ Donor' },
-    { id: 'vol_ngo', label: 'Volunteer ↔ NGO' },
-    { id: 'donor_ngo', label: 'Donor ↔ NGO' }
-  ];
+  // Dynamic 2-Tab Participant-Centric Channels
+  const availableChannels: Array<{ id: 'vol_donor' | 'vol_ngo' | 'donor_ngo'; label: string }> = [];
 
-  const [activeChannel, setActiveChannel] = useState<'vol_donor' | 'vol_ngo' | 'donor_ngo'>('vol_donor');
+  if (currentRole === 'volunteer') {
+    availableChannels.push(
+      { id: 'vol_donor', label: `Chat with Donor (${donorName})` },
+      { id: 'vol_ngo', label: `Chat with NGO (${ngoName})` }
+    );
+  } else if (currentRole === 'ngo') {
+    availableChannels.push(
+      { id: 'vol_ngo', label: `Chat with Volunteer (${volunteerName || 'Volunteer'})` },
+      { id: 'donor_ngo', label: `Chat with Donor (${donorName})` }
+    );
+  } else if (currentRole === 'donor') {
+    availableChannels.push(
+      { id: 'vol_donor', label: `Chat with Volunteer (${volunteerName || 'Volunteer'})` },
+      { id: 'donor_ngo', label: `Chat with NGO (${ngoName})` }
+    );
+  } else {
+    // Admin Audit View
+    availableChannels.push(
+      { id: 'vol_donor', label: 'Vol ↔ Donor' },
+      { id: 'vol_ngo', label: 'Vol ↔ NGO' },
+      { id: 'donor_ngo', label: 'Donor ↔ NGO' }
+    );
+  }
+
+  const [activeChannel, setActiveChannel] = useState<'vol_donor' | 'vol_ngo' | 'donor_ngo'>(availableChannels[0].id);
   const [inputText, setInputText] = useState('');
 
   // Filter messages for active channel
@@ -74,9 +94,9 @@ export const LiveChatModal: React.FC<LiveChatModalProps> = ({
               </div>
               <div>
                 <div className="flex items-center gap-1.5">
-                  <h3 className="font-extrabold text-sm text-white">Parallel 3-Way Rescue Chat</h3>
+                  <h3 className="font-extrabold text-sm text-white">Live Rescue Chat</h3>
                   <span className="bg-emerald-950 text-emerald-400 border border-emerald-600/60 text-[9px] font-black uppercase px-2 py-0.5 rounded-full flex items-center gap-1">
-                    <Sparkles className="w-2.5 h-2.5" /> Parallel Channels
+                    <Sparkles className="w-2.5 h-2.5" /> Real-time Sync
                   </span>
                 </div>
                 <p className="text-[10px] text-slate-400">
@@ -92,13 +112,13 @@ export const LiveChatModal: React.FC<LiveChatModalProps> = ({
             </button>
           </div>
 
-          {/* 3 Parallel Channels Selector */}
-          <div className="grid grid-cols-3 gap-1 p-1 bg-slate-900 rounded-xl border border-slate-800 text-[10px] font-bold text-center">
+          {/* Participant-Centric 2-Tab Selector */}
+          <div className={`grid grid-cols-${availableChannels.length} gap-1 p-1 bg-slate-900 rounded-xl border border-slate-800 text-[10px] font-bold text-center`}>
             {availableChannels.map(ch => (
               <button
                 key={ch.id}
                 onClick={() => setActiveChannel(ch.id)}
-                className={`py-1.5 rounded-lg transition-all ${
+                className={`py-2 rounded-lg transition-all ${
                   activeChannel === ch.id ? 'bg-emerald-600 text-white font-extrabold shadow' : 'text-slate-400 hover:text-white'
                 }`}
               >
@@ -112,10 +132,10 @@ export const LiveChatModal: React.FC<LiveChatModalProps> = ({
         <div className="flex-1 p-4 overflow-y-auto space-y-3 bg-slate-950/50 text-xs">
           {filteredMessages.length === 0 ? (
             <div className="text-center py-12 space-y-2 text-slate-500">
-              <MessageCircle className="w-8 h-8 text-emerald-500 mx-auto opacity-40 animate-pulse" />
-              <p className="font-bold text-slate-300">Parallel Chat ({availableChannels.find(c => c.id === activeChannel)?.label})</p>
+              <MessageSquare className="w-8 h-8 text-emerald-500 mx-auto opacity-40 animate-pulse" />
+              <p className="font-bold text-slate-300">Live Chat Stream ({availableChannels.find(c => c.id === activeChannel)?.label})</p>
               <p className="text-[10px] max-w-xs mx-auto text-slate-400">
-                You can switch between any of the 3 channels to chat in parallel with Donors, Volunteers, or NGOs.
+                Messages sent here reflect in real time across participant portals.
               </p>
             </div>
           ) : (
@@ -169,7 +189,7 @@ export const LiveChatModal: React.FC<LiveChatModalProps> = ({
           >
             <input
               type="text"
-              placeholder={`Message in ${availableChannels.find(c => c.id === activeChannel)?.label}...`}
+              placeholder={`Send message in ${availableChannels.find(c => c.id === activeChannel)?.label}...`}
               value={inputText}
               onChange={(e) => setInputText(e.target.value)}
               className="flex-1 bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500"
