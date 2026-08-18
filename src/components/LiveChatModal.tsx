@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, Send, MessageSquare, User, ShieldCheck, Sparkles, Building, HeartHandshake } from 'lucide-react';
+import { X, Send, MessageSquare, ShieldCheck, Sparkles, Lock, Shield } from 'lucide-react';
 import { useFoodBridge } from '../context/FoodBridgeContext';
 
 interface LiveChatModalProps {
@@ -14,27 +14,58 @@ export const LiveChatModal: React.FC<LiveChatModalProps> = ({
   requestId,
   donorName,
   volunteerName,
-  ngoName = 'Hope Children Shelter',
+  ngoName = 'Hope Children Shelter & NGO',
   onClose
 }) => {
   const { chatMessages, sendChatMessage, authUser } = useFoodBridge();
-  const [inputText, setInputText] = useState('');
-  const [activeChannel, setActiveChannel] = useState<'vol_donor' | 'vol_ngo' | 'donor_ngo'>('vol_donor');
-
-  const messages = chatMessages.filter(m => m.requestId === requestId);
   const currentRole = authUser?.role || 'donor';
+
+  // Role-based channel secrecy filtering
+  const availableChannels: Array<{ id: 'vol_donor' | 'vol_ngo' | 'donor_ngo'; label: string }> = [];
+
+  if (currentRole === 'volunteer') {
+    availableChannels.push(
+      { id: 'vol_donor', label: 'Volunteer ↔ Donor' },
+      { id: 'vol_ngo', label: 'Volunteer ↔ NGO' }
+    );
+  } else if (currentRole === 'donor') {
+    availableChannels.push(
+      { id: 'vol_donor', label: 'Donor ↔ Volunteer' },
+      { id: 'donor_ngo', label: 'Donor ↔ NGO' }
+    );
+  } else if (currentRole === 'ngo') {
+    availableChannels.push(
+      { id: 'vol_ngo', label: 'NGO ↔ Volunteer' },
+      { id: 'donor_ngo', label: 'NGO ↔ Donor' }
+    );
+  } else {
+    // Admin role: see all 3 channels
+    availableChannels.push(
+      { id: 'vol_donor', label: 'Vol ↔ Donor' },
+      { id: 'vol_ngo', label: 'Vol ↔ NGO' },
+      { id: 'donor_ngo', label: 'Donor ↔ NGO' }
+    );
+  }
+
+  const [activeChannel, setActiveChannel] = useState<'vol_donor' | 'vol_ngo' | 'donor_ngo'>(availableChannels[0].id);
+  const [inputText, setInputText] = useState('');
+
+  // Filter messages specifically for the selected active private channel
+  const filteredMessages = chatMessages.filter(
+    m => m.requestId === requestId && (m.channel === activeChannel || (!m.channel && activeChannel === 'vol_donor'))
+  );
 
   const quickChips = activeChannel === 'vol_donor'
     ? [
         "Food is safely packed in thermal containers.",
         "Pickup location is near the main entrance gate.",
-        "I am on my way for pickup!"
+        "On my way for pickup!"
       ]
     : activeChannel === 'vol_ngo'
     ? [
-        "Food loaded safely into vehicle. Heading to your shelter!",
+        "Food loaded safely into vehicle. Heading to shelter!",
         "Estimated arrival time is 10 minutes.",
-        "Please confirm arrival at entrance gate."
+        "Please confirm arrival at shelter gate."
       ]
     : [
         "Thank you for donating this fresh meal!",
@@ -46,7 +77,7 @@ export const LiveChatModal: React.FC<LiveChatModalProps> = ({
     const text = textToSend || inputText;
     if (!text.trim()) return;
 
-    sendChatMessage(requestId, `[${activeChannel === 'vol_donor' ? 'Vol ↔ Donor' : activeChannel === 'vol_ngo' ? 'Vol ↔ NGO' : 'Donor ↔ NGO'}] ${text}`);
+    sendChatMessage(requestId, text, activeChannel);
     setInputText('');
   };
 
@@ -62,9 +93,14 @@ export const LiveChatModal: React.FC<LiveChatModalProps> = ({
                 <MessageSquare className="w-5 h-5" />
               </div>
               <div>
-                <h3 className="font-extrabold text-sm text-white">3-Way Rescue Live Chat</h3>
+                <div className="flex items-center gap-1.5">
+                  <h3 className="font-extrabold text-sm text-white">Private Rescue Chat</h3>
+                  <span className="bg-emerald-950 text-emerald-400 border border-emerald-600/60 text-[9px] font-black uppercase px-2 py-0.5 rounded-full flex items-center gap-1">
+                    <Lock className="w-2.5 h-2.5" /> Channel Secrecy
+                  </span>
+                </div>
                 <p className="text-[10px] text-slate-400">
-                  Req #{requestId} • Donor, Volunteer & NGO Sync
+                  Req #{requestId} • Logged in as <b>{authUser?.name} ({currentRole.toUpperCase()})</b>
                 </p>
               </div>
             </div>
@@ -76,39 +112,35 @@ export const LiveChatModal: React.FC<LiveChatModalProps> = ({
             </button>
           </div>
 
-          {/* 3-Party Channel Switcher */}
-          <div className="grid grid-cols-3 gap-1 p-1 bg-slate-900 rounded-xl border border-slate-800 text-[10px] font-bold text-center">
-            <button
-              onClick={() => setActiveChannel('vol_donor')}
-              className={`py-1.5 rounded-lg transition-all ${activeChannel === 'vol_donor' ? 'bg-emerald-600 text-white font-extrabold shadow' : 'text-slate-400 hover:text-white'}`}
-            >
-              Vol ↔ Donor
-            </button>
-            <button
-              onClick={() => setActiveChannel('vol_ngo')}
-              className={`py-1.5 rounded-lg transition-all ${activeChannel === 'vol_ngo' ? 'bg-teal-600 text-white font-extrabold shadow' : 'text-slate-400 hover:text-white'}`}
-            >
-              Vol ↔ NGO
-            </button>
-            <button
-              onClick={() => setActiveChannel('donor_ngo')}
-              className={`py-1.5 rounded-lg transition-all ${activeChannel === 'donor_ngo' ? 'bg-amber-600 text-white font-extrabold shadow' : 'text-slate-400 hover:text-white'}`}
-            >
-              Donor ↔ NGO
-            </button>
+          {/* Role-Gated Channel Tabs */}
+          <div className={`grid grid-cols-${availableChannels.length} gap-1 p-1 bg-slate-900 rounded-xl border border-slate-800 text-[10px] font-bold text-center`}>
+            {availableChannels.map(ch => (
+              <button
+                key={ch.id}
+                onClick={() => setActiveChannel(ch.id)}
+                className={`py-1.5 rounded-lg transition-all ${
+                  activeChannel === ch.id ? 'bg-emerald-600 text-white font-extrabold shadow' : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                {ch.label}
+              </button>
+            ))}
           </div>
         </div>
 
         {/* Message Stream */}
         <div className="flex-1 p-4 overflow-y-auto space-y-3 bg-slate-950/50 text-xs">
-          {messages.length === 0 ? (
+          {filteredMessages.length === 0 ? (
             <div className="text-center py-12 space-y-2 text-slate-500">
-              <Sparkles className="w-8 h-8 text-emerald-500 mx-auto opacity-40 animate-pulse" />
-              <p className="font-bold text-slate-400">3-Way Chat Active</p>
-              <p className="text-[10px]">Messages sent here update live between Donor ({donorName}), Volunteer ({volunteerName}) and NGO ({ngoName}).</p>
+              <Lock className="w-8 h-8 text-emerald-500 mx-auto opacity-40 animate-pulse" />
+              <p className="font-bold text-slate-300">Private Channel ({availableChannels.find(c => c.id === activeChannel)?.label})</p>
+              <p className="text-[10px] max-w-xs mx-auto text-slate-400">
+                Messages in this channel are end-to-end isolated for secrecy. 
+                {currentRole === 'volunteer' && " Donors and NGOs cannot see other private conversations."}
+              </p>
             </div>
           ) : (
-            messages.map((m, idx) => {
+            filteredMessages.map((m, idx) => {
               const isMe = m.senderRole === currentRole;
               return (
                 <div
@@ -158,7 +190,7 @@ export const LiveChatModal: React.FC<LiveChatModalProps> = ({
           >
             <input
               type="text"
-              placeholder={`Message in ${activeChannel === 'vol_donor' ? 'Vol ↔ Donor' : activeChannel === 'vol_ngo' ? 'Vol ↔ NGO' : 'Donor ↔ NGO'}...`}
+              placeholder={`Message in ${availableChannels.find(c => c.id === activeChannel)?.label}...`}
               value={inputText}
               onChange={(e) => setInputText(e.target.value)}
               className="flex-1 bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500"

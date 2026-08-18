@@ -38,6 +38,7 @@ export interface RegisteredUser {
 export interface ChatMessage {
   id: string;
   requestId: string;
+  channel?: 'vol_donor' | 'vol_ngo' | 'donor_ngo';
   senderRole: UserRole;
   senderName: string;
   text: string;

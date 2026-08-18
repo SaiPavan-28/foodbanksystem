@@ -35,7 +35,7 @@ interface FoodBridgeContextType {
   trainingModules: TrainingModule[];
   // Chat & Notifications
   chatMessages: ChatMessage[];
-  sendChatMessage: (requestId: string, text: string) => void;
+  sendChatMessage: (requestId: string, text: string, channel?: 'vol_donor' | 'vol_ngo' | 'donor_ngo') => void;
   notifications: NotificationAlert[];
   clearNotification: (id: string) => void;
   // Actions
@@ -371,12 +371,13 @@ export const FoodBridgeProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     }
   };
 
-  const sendChatMessage = (requestId: string, text: string) => {
+  const sendChatMessage = (requestId: string, text: string, channel?: 'vol_donor' | 'vol_ngo' | 'donor_ngo') => {
     const newMsg: ChatMessage = {
       id: `msg-${Date.now()}`,
       requestId,
+      channel: channel || 'vol_donor',
       senderRole: authUser?.role || currentRole,
-      senderName: authUser?.name || (currentRole === 'donor' ? 'Donor' : 'Volunteer'),
+      senderName: authUser?.name || (currentRole === 'donor' ? 'Donor' : currentRole === 'ngo' ? 'NGO' : 'Volunteer'),
       text,
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
     };
