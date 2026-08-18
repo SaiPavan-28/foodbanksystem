@@ -193,7 +193,7 @@ export const LoginPage: React.FC = () => {
           </div>
 
           {/* Role Tabs */}
-          <div className="grid grid-cols-3 gap-1 p-1 bg-slate-100 rounded-2xl border border-slate-200 text-xs font-bold text-center">
+          <div className="grid grid-cols-4 gap-1 p-1 bg-slate-100 rounded-2xl border border-slate-200 text-xs font-bold text-center">
             <button
               type="button"
               onClick={() => handleRoleSelect('donor')}
@@ -211,6 +211,15 @@ export const LoginPage: React.FC = () => {
               }`}
             >
               Volunteer
+            </button>
+            <button
+              type="button"
+              onClick={() => handleRoleSelect('ngo')}
+              className={`py-2 rounded-xl transition-all ${
+                selectedRole === 'ngo' ? 'bg-emerald-600 text-white shadow font-extrabold' : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              NGO
             </button>
             <button
               type="button"
@@ -417,6 +426,13 @@ export const LoginPage: React.FC = () => {
                   className="px-3.5 py-1.5 bg-teal-50 text-teal-900 border border-teal-300 rounded-xl font-bold hover:bg-teal-100 transition-all"
                 >
                   Volunteer Demo
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleQuickDemoLogin('ngo')}
+                  className="px-3.5 py-1.5 bg-emerald-50 text-emerald-900 border border-emerald-300 rounded-xl font-bold hover:bg-emerald-100 transition-all"
+                >
+                  NGO Demo
                 </button>
                 <button
                   type="button"

@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { Utensils, Heart, Shield, Sparkles, Navigation, LogIn, LogOut, Star, HeartHandshake } from 'lucide-react';
 import { useFoodBridge } from '../context/FoodBridgeContext';
-import { FoodReliefModal } from './FoodReliefModal';
 
 export const Navbar: React.FC = () => {
   const {
@@ -66,15 +65,25 @@ export const Navbar: React.FC = () => {
                 </div>
               )}
 
-              {/* Request Food Relief Button (For Shelters & Needy) */}
-              <button
-                onClick={() => setShowFoodReliefModal(true)}
-                className="flex items-center gap-1.5 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-slate-950 font-black text-xs px-3.5 py-2 rounded-xl shadow-md transition-all active:scale-95"
-                id="request-food-relief-btn"
-              >
-                <HeartHandshake className="w-4 h-4 text-slate-950 stroke-[2.5]" />
-                <span className="hidden sm:inline">Request Food Relief</span>
-              </button>
+              {/* NGO Badge */}
+              {authUser?.role === 'ngo' && (
+                <div className="hidden sm:flex items-center gap-1.5 bg-teal-950/80 border border-teal-600/80 px-3 py-1.5 rounded-xl text-teal-300 text-xs font-extrabold shadow-sm">
+                  <HeartHandshake className="w-3.5 h-3.5 text-teal-400" />
+                  <span>NGO / Shelter Desk</span>
+                </div>
+              )}
+
+              {/* NGO Sign In Button when logged out */}
+              {!authUser && (
+                <button
+                  onClick={() => openLoginForRole('ngo')}
+                  className="flex items-center gap-1.5 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-slate-950 font-black text-xs px-3.5 py-2 rounded-xl shadow-md transition-all active:scale-95"
+                  id="navbar-ngo-sign-in-btn"
+                >
+                  <HeartHandshake className="w-4 h-4 text-slate-950 stroke-[2.5]" />
+                  <span className="hidden sm:inline">NGO Sign In</span>
+                </button>
+              )}
 
               {/* Simulate Button */}
               <button
@@ -108,10 +117,6 @@ export const Navbar: React.FC = () => {
           </div>
         </div>
       </header>
-
-      {showFoodReliefModal && (
-        <FoodReliefModal onClose={() => setShowFoodReliefModal(false)} />
-      )}
     </>
   );
 };

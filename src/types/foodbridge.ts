@@ -1,4 +1,4 @@
-export type UserRole = 'donor' | 'volunteer' | 'admin' | 'public' | 'login';
+export type UserRole = 'donor' | 'volunteer' | 'admin' | 'ngo' | 'public' | 'login';
 
 export type FoodType = 'Veg Meals' | 'Non-Veg Meals' | 'Raw Grocery/Produce' | 'Packaged Food' | 'Bakery/Bread';
 

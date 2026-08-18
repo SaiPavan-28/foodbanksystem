@@ -6,6 +6,7 @@ import { PublicLanding } from './pages/PublicLanding';
 import { DonorPortal } from './pages/DonorPortal';
 import { VolunteerApp } from './pages/VolunteerApp';
 import { AdminCommandCenter } from './pages/AdminCommandCenter';
+import { NGOPortal } from './pages/NGOPortal';
 import { LoginPage } from './pages/LoginPage';
 
 const AuthorizedContent: React.FC = () => {
@@ -25,6 +26,10 @@ const AuthorizedContent: React.FC = () => {
 
   if (currentRole === 'admin') {
     return <AdminCommandCenter />;
+  }
+
+  if (currentRole === 'ngo') {
+    return <NGOPortal />;
   }
 
   return <PublicLanding />;

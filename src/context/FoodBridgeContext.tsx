@@ -168,7 +168,18 @@ const INITIAL_REGISTERED_USERS: RegisteredUser[] = [
     email: 'admin@foodbridge.org',
     password: 'password123',
     role: 'admin',
-    phone: '+91 98400 00000'
+    phone: '+91 98401 99999'
+  },
+  {
+    id: 'usr-ngo-1',
+    name: 'Hope Children Shelter & NGO',
+    email: 'ngo@foodbridge.org',
+    password: 'password123',
+    role: 'ngo',
+    phone: '+91 98400 55443',
+    establishmentName: 'Hope Children Shelter',
+    points: 120,
+    tier: 'Bronze Donor'
   }
 ];
 

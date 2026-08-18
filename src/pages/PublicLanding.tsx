@@ -1,11 +1,9 @@
 import React, { useState } from 'react';
 import { ShieldCheck, HeartHandshake, Clock, Users, ArrowRight, Award, Zap, CheckCircle2, TrendingUp, Utensils, Heart, LogIn } from 'lucide-react';
 import { useFoodBridge } from '../context/FoodBridgeContext';
-import { FoodReliefModal } from '../components/FoodReliefModal';
 
 export const PublicLanding: React.FC = () => {
   const { openLoginForRole, stats } = useFoodBridge();
-  const [showFoodReliefModal, setShowFoodReliefModal] = useState<boolean>(false);
 
   return (
     <div className="min-h-screen bg-[#FAF8F5] text-slate-900 selection:bg-emerald-500 selection:text-white">
@@ -40,17 +38,17 @@ export const PublicLanding: React.FC = () => {
                 </p>
               </div>
 
-              {/* Action Buttons (Including Request Food Relief for Shelters & Beneficiaries) */}
+              {/* Action Buttons */}
               <div className="flex flex-wrap items-center gap-3 pt-2">
                 
-                {/* 1. Request Food Relief (For Shelters & Needy) */}
+                {/* 1. NGO Food Relief Sign In */}
                 <button
-                  onClick={() => setShowFoodReliefModal(true)}
+                  onClick={() => openLoginForRole('ngo')}
                   className="px-6 py-4 bg-gradient-to-r from-emerald-600 to-teal-700 hover:from-emerald-500 hover:to-teal-600 text-white font-black text-sm rounded-2xl shadow-xl flex items-center justify-center gap-2 transition-all scale-100 hover:scale-105"
-                  id="hero-request-food-relief-btn"
+                  id="hero-ngo-sign-in-btn"
                 >
                   <HeartHandshake className="w-4.5 h-4.5" />
-                  <span>Request Food Relief (For Shelters/Needy)</span>
+                  <span>NGO / Shelter Food Relief Sign In</span>
                 </button>
 
                 {/* 2. Donate Surplus Food */}
@@ -201,10 +199,6 @@ export const PublicLanding: React.FC = () => {
           <p className="text-slate-500">Transforming manual helpline & spreadsheet coordination into real-time food rescue intelligence.</p>
         </div>
       </footer>
-
-      {showFoodReliefModal && (
-        <FoodReliefModal onClose={() => setShowFoodReliefModal(false)} />
-      )}
 
     </div>
   );
