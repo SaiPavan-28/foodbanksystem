@@ -439,7 +439,7 @@ export const VolunteerApp: React.FC = () => {
                   : null;
 
                 const displayDonorName = isShelterNeed
-                  ? (matchedDonorOffer?.donorName || req.matchedDonorName || 'Sri Grand Marriage Hall')
+                  ? (matchedDonorOffer?.donorName || 'Sri Grand Marriage Hall')
                   : req.donorName;
 
                 const displayDonorAddress = isShelterNeed
