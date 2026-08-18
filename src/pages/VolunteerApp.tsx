@@ -58,15 +58,31 @@ export const VolunteerApp: React.FC = () => {
   );
   
   const unmatchedShelterNeeds = requests.filter(r => r.status === 'needy_demand');
-  const activeMissions = requests.filter(r => 
+  const rawActiveMissions = requests.filter(r => 
     (r.assignedVolunteerId === currentVolunteer.id || (r.assignedVolunteerId && r.assignedVolunteerId === authUser?.id)) &&
     r.status !== 'delivered'
   );
 
-  const completedMissions = requests.filter(r => 
+  const activeMissions = rawActiveMissions.filter(r => {
+    if (r.requestType === 'shelter_need' && r.matchedDonorRequestId) {
+      const hasDonorOffer = rawActiveMissions.some(d => d.id === r.matchedDonorRequestId);
+      if (hasDonorOffer) return false;
+    }
+    return true;
+  });
+
+  const rawCompletedMissions = requests.filter(r => 
     (r.assignedVolunteerId === currentVolunteer.id || (r.assignedVolunteerId && r.assignedVolunteerId === authUser?.id)) &&
     r.status === 'delivered'
   );
+
+  const completedMissions = rawCompletedMissions.filter(r => {
+    if (r.requestType === 'shelter_need' && r.matchedDonorRequestId) {
+      const hasDonorOffer = rawCompletedMissions.some(d => d.id === r.matchedDonorRequestId);
+      if (hasDonorOffer) return false;
+    }
+    return true;
+  });
 
   const handleAcceptOrder = (reqId: string) => {
     if (currentVolunteer.status === 'busy') {
