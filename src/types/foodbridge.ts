@@ -2,7 +2,7 @@ export type UserRole = 'donor' | 'volunteer' | 'admin' | 'public' | 'login';
 
 export type FoodType = 'Veg Meals' | 'Non-Veg Meals' | 'Raw Grocery/Produce' | 'Packaged Food' | 'Bakery/Bread';
 
-export type RequestStatus = 'requested' | 'pooled' | 'accepted' | 'picked_up' | 'in_transit' | 'delivered' | 'rejected' | 'fallback_routed';
+export type RequestStatus = 'requested' | 'pooled' | 'needy_demand' | 'matched' | 'accepted' | 'picked_up' | 'in_transit' | 'delivered' | 'rejected' | 'fallback_routed';
 
 export type VolunteerStatus = 'available' | 'busy' | 'offline';
 
@@ -66,6 +66,9 @@ export interface DonationRequest {
   donorId?: string;
   donorName: string;
   donorPhone: string;
+  requestType?: 'donor_offer' | 'shelter_need';
+  matchedDonorRequestId?: string;
+  matchedShelterName?: string;
   foodType: FoodType;
   quantityKg: number;
   estimatedServings: number;

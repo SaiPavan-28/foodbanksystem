@@ -51,7 +51,13 @@ export const VolunteerApp: React.FC = () => {
   const [deliveryPhotoFile, setDeliveryPhotoFile] = useState<string | null>(null);
   const [recipientName, setRecipientName] = useState('Anitha (Koyambedu Shelter)');
 
-  const unassignedRequests = requests.filter(r => r.status === 'requested' || r.status === 'pooled');
+  const unassignedRequests = requests.filter(r => 
+    (r.status === 'requested' || r.status === 'pooled' || r.status === 'matched') && 
+    r.requestType !== 'shelter_need' && 
+    !r.assignedVolunteerId
+  );
+  
+  const unmatchedShelterNeeds = requests.filter(r => r.status === 'needy_demand');
   const assignedRequests = requests.filter(r => r.assignedVolunteerId === currentVolunteer.id || (r.assignedVolunteerId && r.assignedVolunteerId === authUser?.id));
 
   const handleAcceptOrder = (reqId: string) => {
@@ -191,7 +197,47 @@ export const VolunteerApp: React.FC = () => {
               <span className="text-[10px] text-teal-700 font-bold uppercase">Real-time Feed</span>
             </div>
 
-            {unassignedRequests.length === 0 ? (
+            {/* Unmatched Shelter Needs (Waiting for Donor Food) */}
+            {unmatchedShelterNeeds.length > 0 && (
+              <div className="space-y-3">
+                <h4 className="text-xs font-black uppercase tracking-wider text-amber-800 flex items-center gap-1.5">
+                  <AlertCircle className="w-4 h-4 text-amber-600" />
+                  Food Relief Requests (Awaiting Food Donor Match)
+                </h4>
+                {unmatchedShelterNeeds.map(req => (
+                  <div key={req.id} className="bg-amber-950 text-white rounded-3xl p-5 border-2 border-amber-600 shadow-xl space-y-3">
+                    <div className="flex items-center justify-between border-b border-amber-800/80 pb-2.5">
+                      <div>
+                        <span className="bg-amber-500 text-slate-950 font-black text-[9px] uppercase px-2 py-0.5 rounded-full">
+                          Awaiting Food Donor Match
+                        </span>
+                        <h4 className="font-extrabold text-base text-white mt-1">{req.donorName}</h4>
+                        <p className="text-xs text-amber-200">{req.location.address}</p>
+                      </div>
+                      <GoldenHourBadge deadlineIso={req.goldenHourDeadline} size="sm" />
+                    </div>
+
+                    <div className="p-3 bg-amber-900/50 rounded-2xl border border-amber-800 text-xs space-y-1">
+                      <span className="text-amber-200 block font-bold">Requested Food Need:</span>
+                      <span className="font-extrabold text-white">{req.estimatedServings} Meals Needed ({req.foodType})</span>
+                      <p className="text-[10px] text-amber-300 italic pt-1">
+                        ⚠️ Waiting for a nearby donor to submit surplus food before volunteer pickup can begin.
+                      </p>
+                    </div>
+
+                    <button
+                      disabled
+                      className="w-full py-3 bg-slate-900/80 text-amber-400 font-extrabold text-xs rounded-2xl border border-amber-600/40 cursor-not-allowed opacity-90 flex items-center justify-center gap-2"
+                    >
+                      <span>⏳ Awaiting Food Donor to Post Food...</span>
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Donor Food Offers Ready for Pickup */}
+            {unassignedRequests.length === 0 && unmatchedShelterNeeds.length === 0 ? (
               <div className="bg-white p-8 rounded-3xl border border-teal-200 text-center space-y-2 shadow">
                 <p className="font-bold text-slate-800 text-sm">No Pending Orders Nearby</p>
                 <p className="text-xs text-slate-500">New donor requests will broadcast instant alert popups here.</p>
@@ -201,7 +247,7 @@ export const VolunteerApp: React.FC = () => {
                 <div key={req.id} className="bg-teal-950 text-white rounded-3xl p-5 border-2 border-teal-600 shadow-2xl space-y-4">
                   <div className="flex items-center justify-between border-b border-teal-800 pb-3">
                     <div>
-                      <span className="text-[10px] font-bold uppercase text-[#84CC16]">⚡ New Rescue Order #{req.id}</span>
+                      <span className="text-[10px] font-bold uppercase text-[#84CC16]">⚡ Donor Surplus Food Available #{req.id}</span>
                       <h4 className="font-extrabold text-base text-white">{req.donorName}</h4>
                       <p className="text-xs text-teal-200">{req.location.address}</p>
                     </div>
@@ -210,7 +256,7 @@ export const VolunteerApp: React.FC = () => {
 
                   <div className="bg-teal-900/60 p-3 rounded-2xl border border-teal-800 grid grid-cols-2 gap-2 text-xs">
                     <div>
-                      <span className="text-teal-200 block">Food Type</span>
+                      <span className="text-teal-200 block">Available Food</span>
                       <span className="font-bold text-white">{req.foodType}</span>
                     </div>
                     <div>
@@ -218,6 +264,13 @@ export const VolunteerApp: React.FC = () => {
                       <span className="font-bold text-[#84CC16]">{req.quantityKg} kg (~{req.estimatedServings} meals)</span>
                     </div>
                   </div>
+
+                  {req.matchedShelterName && (
+                    <div className="p-2.5 bg-emerald-900/70 border border-emerald-500/60 rounded-xl text-xs text-emerald-200 flex items-center justify-between">
+                      <span>Destination: <b>{req.matchedShelterName}</b></span>
+                      <span className="bg-emerald-500 text-slate-950 font-black text-[9px] px-2 py-0.5 rounded-full">MATCHED</span>
+                    </div>
+                  )}
 
                   <button
                     onClick={() => handleAcceptOrder(req.id)}

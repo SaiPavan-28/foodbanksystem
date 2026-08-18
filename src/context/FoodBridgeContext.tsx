@@ -394,25 +394,92 @@ export const FoodBridgeProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     const isSmallQuantity = requestData.quantityKg <= 5 || requestData.estimatedServings <= 15;
     const earnedPoints = Math.round(requestData.quantityKg * 10 + 50);
 
+    const isShelterNeed = requestData.requestType === 'shelter_need' || 
+      requestData.donorName.includes('Food Relief Request') || 
+      (requestData.notes && requestData.notes.includes('[FOOD RELIEF REQUEST]'));
+
+    const reqType = isShelterNeed ? 'shelter_need' : 'donor_offer';
+
+    let initialStatus: RequestStatus = 'requested';
+    let matchedShelterName = requestData.matchedShelterName;
+    let matchedDonorRequestId = requestData.matchedDonorRequestId;
+
+    if (reqType === 'shelter_need') {
+      // Look for an available donor surplus offer in state
+      const matchingDonorOffer = requests.find(r => 
+        r.requestType !== 'shelter_need' && 
+        (r.status === 'requested' || r.status === 'pooled') &&
+        (!r.matchedShelterName)
+      );
+
+      if (matchingDonorOffer) {
+        initialStatus = 'matched';
+        matchedDonorRequestId = matchingDonorOffer.id;
+        matchedShelterName = requestData.donorName;
+
+        // Update donor offer status
+        setRequests(prev => prev.map(r => r.id === matchingDonorOffer.id ? { ...r, status: 'matched', matchedShelterName: requestData.donorName } : r));
+
+        addNotification(
+          'volunteer',
+          '⚡ Donor Surplus Matched!',
+          `Surplus food from ${matchingDonorOffer.donorName} is matched & assigned for delivery to ${requestData.donorName}.`,
+          id
+        );
+      } else {
+        // No donor available yet
+        initialStatus = 'needy_demand';
+
+        addNotification(
+          'volunteer',
+          '📢 Food Relief Need Registered (Awaiting Donor Match)',
+          `Food relief request from ${requestData.donorName} (${requestData.estimatedServings} meals in ${requestData.location.areaName}). Awaiting surplus food donor.`,
+          id
+        );
+      }
+    } else {
+      // Donor Offer: Look for a pending shelter need
+      const pendingShelterNeed = requests.find(r => r.status === 'needy_demand');
+
+      if (pendingShelterNeed) {
+        initialStatus = 'matched';
+        matchedShelterName = pendingShelterNeed.donorName;
+
+        // Update shelter need status
+        setRequests(prev => prev.map(r => r.id === pendingShelterNeed.id ? { ...r, status: 'matched', matchedDonorRequestId: id } : r));
+
+        addNotification(
+          'volunteer',
+          '⚡ Donor Surplus Matched!',
+          `Surplus food from ${requestData.donorName} is matched & assigned for delivery to ${pendingShelterNeed.donorName}.`,
+          id
+        );
+      } else {
+        initialStatus = isSmallQuantity ? 'pooled' : 'requested';
+
+        addNotification(
+          'volunteer',
+          '⚡ New Swiggy-Style Rescue Dispatch!',
+          `Incoming surplus food order from ${requestData.donorName} (${requestData.quantityKg} kg in ${requestData.location.areaName}).`,
+          id
+        );
+      }
+    }
+
     const newReq: DonationRequest = {
       ...requestData,
       id,
       donorId: requestData.donorId || authUser?.id,
-      status: isSmallQuantity ? 'pooled' : 'requested',
+      requestType: reqType,
+      status: initialStatus,
+      matchedShelterName,
+      matchedDonorRequestId,
       isSmallQuantity,
       earnedPoints,
       createdAt: new Date().toISOString()
     };
 
     setRequests(prev => [newReq, ...prev]);
-
-    addNotification(
-      'volunteer',
-      '⚡ New Swiggy-Style Rescue Dispatch!',
-      `Incoming surplus food order from ${requestData.donorName} (${requestData.quantityKg} kg in ${requestData.location.areaName}).`,
-      id
-    );
-
     return id;
   };
 
