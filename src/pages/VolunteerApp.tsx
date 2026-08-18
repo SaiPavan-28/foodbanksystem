@@ -197,7 +197,23 @@ export const VolunteerApp: React.FC = () => {
               <span className="text-[10px] text-teal-700 font-bold uppercase">Real-time Feed</span>
             </div>
 
-            {/* Unmatched Shelter Needs (Waiting for Donor Food) */}
+            {currentVolunteer.status !== 'available' ? (
+              <div className="bg-amber-950 border-2 border-amber-500 rounded-3xl p-6 text-white text-center space-y-4 shadow-xl">
+                <AlertCircle className="w-10 h-10 text-amber-400 mx-auto" />
+                <h4 className="font-extrabold text-lg text-white">You Are Currently Offline / Busy</h4>
+                <p className="text-xs text-amber-200">
+                  Order requests are hidden when you are offline. Toggle your status to <b>AVAILABLE</b> to view & accept live food rescue orders.
+                </p>
+                <button
+                  onClick={() => toggleVolunteerStatus(currentVolunteer.id, 'available')}
+                  className="px-6 py-3 bg-[#84CC16] hover:bg-lime-400 text-slate-950 font-black text-xs rounded-xl shadow-lg transition-all"
+                >
+                  ✓ Set Status to AVAILABLE
+                </button>
+              </div>
+            ) : (
+              <>
+                {/* Unmatched Shelter Needs (Waiting for Donor Food) */}
             {unmatchedShelterNeeds.length > 0 && (
               <div className="space-y-3">
                 <h4 className="text-xs font-black uppercase tracking-wider text-amber-800 flex items-center gap-1.5">
@@ -281,6 +297,8 @@ export const VolunteerApp: React.FC = () => {
                 </div>
               ))
             )}
+            </>
+          )}
           </div>
         )}
 

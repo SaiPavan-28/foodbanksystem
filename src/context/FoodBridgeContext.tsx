@@ -493,17 +493,27 @@ export const FoodBridgeProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     setRequests(prev => [newReq, ...prev]);
     return id;
   };
-
   const updateRequestStatus = (requestId: string, status: RequestStatus, extraData?: Partial<DonationRequest>) => {
-    setRequests(prev =>
-      prev.map(req => {
-        if (req.id === requestId) {
+    setRequests(prev => {
+      const target = prev.find(r => r.id === requestId);
+      if (!target) return prev;
+
+      const linkedIds = new Set<string>([requestId]);
+      if (target.matchedDonorRequestId) linkedIds.add(target.matchedDonorRequestId);
+      prev.forEach(r => {
+        if (r.matchedDonorRequestId === requestId || (r.matchedShelterName && r.matchedShelterName === target.donorName)) {
+          linkedIds.add(r.id);
+        }
+      });
+
+      return prev.map(req => {
+        if (linkedIds.has(req.id)) {
           const updated = { ...req, status, ...extraData };
 
           if (status === 'delivered') {
             setVolunteers(vPrev =>
               vPrev.map(vol =>
-                vol.id === req.assignedVolunteerId
+                vol.id === req.assignedVolunteerId || vol.id === target.assignedVolunteerId
                   ? { ...vol, volunteerPoints: vol.volunteerPoints + 70, totalRescues: vol.totalRescues + 1, status: 'available' }
                   : vol
               )
@@ -513,22 +523,33 @@ export const FoodBridgeProvider: React.FC<{ children: React.ReactNode }> = ({ ch
               'donor',
               '🎉 Food Delivered & Impact Points Earned!',
               `Your food donation from ${req.donorName} was delivered successfully. +${req.earnedPoints || 300} points awarded!`,
-              requestId
+              req.id
             );
           }
 
           return updated;
         }
         return req;
-      })
-    );
+      });
+    });
   };
 
   const assignVolunteerToRequest = (requestId: string, volunteerId: string) => {
     const vol = volunteers.find(v => v.id === volunteerId);
-    setRequests(prev =>
-      prev.map(req => {
-        if (req.id === requestId) {
+    setRequests(prev => {
+      const target = prev.find(r => r.id === requestId);
+      if (!target) return prev;
+
+      const linkedIds = new Set<string>([requestId]);
+      if (target.matchedDonorRequestId) linkedIds.add(target.matchedDonorRequestId);
+      prev.forEach(r => {
+        if (r.matchedDonorRequestId === requestId || (r.matchedShelterName && r.matchedShelterName === target.donorName)) {
+          linkedIds.add(r.id);
+        }
+      });
+
+      return prev.map(req => {
+        if (linkedIds.has(req.id)) {
           return {
             ...req,
             status: 'accepted',
@@ -537,8 +558,8 @@ export const FoodBridgeProvider: React.FC<{ children: React.ReactNode }> = ({ ch
           };
         }
         return req;
-      })
-    );
+      });
+    });
 
     setVolunteers(prev =>
       prev.map(v => (v.id === volunteerId ? { ...v, status: 'busy', currentAssignedRequestId: requestId } : v))
