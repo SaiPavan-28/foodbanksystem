@@ -56,11 +56,37 @@ export const NGOPortal: React.FC = () => {
     confetti({ particleCount: 100, spread: 80, origin: { y: 0.6 } });
   };
 
-  const myRequests = requests.filter(r => 
-    (r.donorId && r.donorId === authUser?.id) || 
-    r.donorName === authUser?.name ||
-    (authUser?.establishmentName && r.donorName === authUser?.establishmentName)
-  );
+  const currentNgoName = (authUser?.establishmentName || authUser?.name || shelterName || '').trim().toLowerCase();
+  const currentNgoId = authUser?.id;
+
+  const myRequests = requests.filter(r => {
+    // 1. Must belong to this specific NGO (either created by this NGO or matched to this NGO)
+    const isOwner = Boolean(
+      (currentNgoId && r.donorId === currentNgoId) ||
+      (currentNgoName && r.donorName.trim().toLowerCase() === currentNgoName)
+    );
+
+    const isMatchedRecipient = Boolean(
+      currentNgoName && r.matchedShelterName && r.matchedShelterName.trim().toLowerCase() === currentNgoName
+    );
+
+    if (!isOwner && !isMatchedRecipient) {
+      return false;
+    }
+
+    // 2. Prevent duplicate card when donor offer & shelter need are paired
+    if (r.requestType !== 'shelter_need' && r.matchedDonorRequestId) {
+      const hasPairedShelterNeed = requests.some(
+        s => s.id === r.matchedDonorRequestId && (
+          (currentNgoId && s.donorId === currentNgoId) ||
+          (currentNgoName && s.donorName.trim().toLowerCase() === currentNgoName)
+        )
+      );
+      if (hasPairedShelterNeed) return false;
+    }
+
+    return true;
+  });
 
   const totalMealsReceived = myRequests
     .filter(r => r.status === 'delivered')
@@ -243,11 +269,40 @@ export const NGOPortal: React.FC = () => {
             ) : (
               myRequests.map(req => {
                 const vol = volunteers.find(v => v.id === req.assignedVolunteerId);
+                const matchedDonorOffer = req.matchedDonorRequestId 
+                  ? requests.find(r => r.id === req.matchedDonorRequestId)
+                  : null;
+
+                const donorDisplayName = req.requestType === 'shelter_need'
+                  ? (matchedDonorOffer?.donorName || (req.matchedDonorRequestId ? 'Matched Donor' : 'Awaiting Surplus Donor'))
+                  : req.donorName;
 
                 const isStep1Done = true;
-                const isStep2Done = req.status === 'accepted' || req.status === 'in_transit' || req.status === 'delivered';
+                const isStep2Done = req.status === 'matched' || req.status === 'accepted' || req.status === 'in_transit' || req.status === 'delivered';
                 const isStep3Done = req.status === 'in_transit' || req.status === 'delivered';
                 const isStep4Done = req.status === 'delivered';
+
+                // Status badge label and color
+                const getStatusBadge = () => {
+                  if (req.status === 'needy_demand') {
+                    return { text: 'Awaiting Food Donor', cls: 'bg-amber-100 text-amber-900 border-amber-300' };
+                  }
+                  if (req.status === 'matched') {
+                    return { text: `Matched: ${donorDisplayName}`, cls: 'bg-teal-100 text-teal-900 border-teal-300' };
+                  }
+                  if (req.status === 'accepted') {
+                    return { text: `Volunteer ${vol ? vol.name.split(' ')[0] : ''} Dispatched`, cls: 'bg-emerald-100 text-emerald-900 border-emerald-300' };
+                  }
+                  if (req.status === 'in_transit') {
+                    return { text: 'Food In Transit 🚚', cls: 'bg-amber-100 text-amber-900 border-amber-300 animate-pulse' };
+                  }
+                  if (req.status === 'delivered') {
+                    return { text: 'Delivered & Received ✅', cls: 'bg-emerald-100 text-emerald-900 border-emerald-300' };
+                  }
+                  return { text: req.status.toUpperCase(), cls: 'bg-slate-100 text-slate-800 border-slate-300' };
+                };
+
+                const statusBadge = getStatusBadge();
 
                 return (
                   <div key={req.id} className="bg-white border border-slate-200/80 rounded-3xl p-6 sm:p-8 shadow-xl space-y-6">
@@ -261,13 +316,13 @@ export const NGOPortal: React.FC = () => {
                         <div>
                           <div className="flex items-center gap-2">
                             <h3 className="font-extrabold text-slate-900 text-base">{req.donorName}</h3>
-                            <span className={`text-[10px] font-extrabold px-2.5 py-0.5 rounded-full border ${
-                              req.status === 'needy_demand' ? 'bg-amber-100 text-amber-900 border-amber-300' : 'bg-emerald-100 text-emerald-900 border-emerald-300'
-                            }`}>
-                              {req.status === 'needy_demand' ? 'Awaiting Food Donor' : 'Matched & Active'}
+                            <span className={`text-[10px] font-extrabold px-2.5 py-0.5 rounded-full border ${statusBadge.cls}`}>
+                              {statusBadge.text}
                             </span>
                           </div>
-                          <p className="text-xs text-slate-500">{req.foodType} • <b>{req.estimatedServings} Meals Needed</b> • {req.location.areaName}</p>
+                          <p className="text-xs text-slate-500">
+                            {req.foodType} • <b>{req.estimatedServings} Meals Needed</b> • {req.location.areaName}
+                          </p>
                         </div>
                       </div>
                       <GoldenHourBadge deadlineIso={req.goldenHourDeadline} />
@@ -299,12 +354,13 @@ export const NGOPortal: React.FC = () => {
                           <div
                             className="h-full bg-gradient-to-r from-teal-500 via-emerald-400 to-amber-500 transition-all duration-500 rounded-full"
                             style={{
-                              width: isStep4Done ? '100%' : isStep3Done ? '66%' : isStep2Done ? '33%' : '0%'
+                              width: isStep4Done ? '100%' : isStep3Done ? '66%' : isStep2Done ? (req.status === 'matched' ? '25%' : '33%') : '0%'
                             }}
                           />
                         </div>
 
                         <div className="grid grid-cols-4 gap-2 relative z-10 text-center">
+                          {/* Dot 1 */}
                           <div className="flex flex-col items-center gap-2">
                             <div className="w-9 h-9 rounded-full bg-teal-500 text-slate-950 font-black flex items-center justify-center border-4 border-slate-950 shadow-lg">
                               <Check className="w-5 h-5 stroke-[3]" />
@@ -313,6 +369,7 @@ export const NGOPortal: React.FC = () => {
                             <span className="text-[9px] text-slate-400 font-mono">Request Registered</span>
                           </div>
 
+                          {/* Dot 2 */}
                           <div className="flex flex-col items-center gap-2">
                             <div className={`w-9 h-9 rounded-full font-black flex items-center justify-center border-4 border-slate-950 transition-all ${
                               isStep2Done ? 'bg-teal-500 text-slate-950 shadow-lg' : 'bg-slate-800 text-slate-500'
@@ -322,11 +379,12 @@ export const NGOPortal: React.FC = () => {
                             <div className={`text-[11px] font-bold ${isStep2Done ? 'text-teal-300' : 'text-slate-500'}`}>
                               2. Donor & Vol Matched
                             </div>
-                            <span className="text-[9px] text-slate-400 font-mono">
-                              {vol ? `${vol.name.split(' ')[0]}` : 'Awaiting Match'}
+                            <span className="text-[9px] text-slate-400 font-mono truncate max-w-[80px]">
+                              {vol ? `${vol.name.split(' ')[0]}` : req.status === 'matched' ? 'Donor Matched' : 'Awaiting Match'}
                             </span>
                           </div>
 
+                          {/* Dot 3 */}
                           <div className="flex flex-col items-center gap-2">
                             <div className={`w-9 h-9 rounded-full font-black flex items-center justify-center border-4 border-slate-950 transition-all ${
                               isStep3Done ? 'bg-emerald-400 text-slate-950 shadow-lg' : 'bg-slate-800 text-slate-500'
@@ -336,9 +394,12 @@ export const NGOPortal: React.FC = () => {
                             <div className={`text-[11px] font-bold ${isStep3Done ? 'text-emerald-300' : 'text-slate-500'}`}>
                               3. Food Picked Up
                             </div>
-                            <span className="text-[9px] text-slate-400 font-mono">In Transit</span>
+                            <span className="text-[9px] text-slate-400 font-mono">
+                              {req.status === 'in_transit' ? 'In Transit' : isStep3Done ? 'Completed' : 'Pending'}
+                            </span>
                           </div>
 
+                          {/* Dot 4 */}
                           <div className="flex flex-col items-center gap-2">
                             <div className={`w-9 h-9 rounded-full font-black flex items-center justify-center border-4 border-slate-950 transition-all ${
                               isStep4Done ? 'bg-amber-400 text-slate-950 shadow-lg' : 'bg-slate-800 text-slate-500'
@@ -348,22 +409,76 @@ export const NGOPortal: React.FC = () => {
                             <div className={`text-[11px] font-bold ${isStep4Done ? 'text-amber-400' : 'text-slate-500'}`}>
                               4. Received at NGO
                             </div>
-                            <span className="text-[9px] text-slate-400 font-mono">Delivered</span>
+                            <span className="text-[9px] text-slate-400 font-mono">
+                              {isStep4Done ? 'Delivered' : req.status === 'in_transit' ? 'Arriving' : 'Pending'}
+                            </span>
                           </div>
                         </div>
                       </div>
 
-                      {/* Step 4 Action: NGO Confirmation */}
+                      {/* Real-time Dynamic Tracker Action Box */}
                       <div className="bg-slate-900 p-4 rounded-2xl border border-slate-800 space-y-3">
-                        {req.status === 'in_transit' && (
-                          <div className="p-3 bg-amber-950/70 border border-amber-500/60 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                        
+                        {req.status === 'needy_demand' && (
+                          <div className="p-3.5 bg-amber-950/70 border border-amber-500/60 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                             <div>
                               <h4 className="font-extrabold text-xs text-amber-300 flex items-center gap-1.5">
-                                <PackageCheck className="w-4 h-4 text-amber-400" />
-                                Step 4 NGO Delivery Confirmation
+                                <AlertCircle className="w-4 h-4 text-amber-400 animate-pulse" />
+                                Step 1 Active: Searching for Nearby Surplus Food Donors
                               </h4>
                               <p className="text-[10px] text-slate-300">
-                                Volunteer is arriving at <b>{shelterName}</b>. Click below to verify food arrival!
+                                Your food relief request is registered. Broadcasting to donors in <b>{req.location.areaName}</b> for auto-match dispatch.
+                              </p>
+                            </div>
+                            <span className="px-3 py-1.5 bg-amber-900/80 text-amber-300 border border-amber-700/80 font-bold text-[10px] rounded-lg shrink-0">
+                              Broadcasting...
+                            </span>
+                          </div>
+                        )}
+
+                        {req.status === 'matched' && (
+                          <div className="p-3.5 bg-teal-950/70 border border-teal-500/60 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                            <div>
+                              <h4 className="font-extrabold text-xs text-teal-300 flex items-center gap-1.5">
+                                <CheckCircle2 className="w-4 h-4 text-teal-400" />
+                                Step 2 Active: Surplus Food Matched with {donorDisplayName}!
+                              </h4>
+                              <p className="text-[10px] text-slate-300">
+                                Surplus food reserved from <b>{donorDisplayName}</b>. Dispatch alert broadcasted to nearby rescue volunteers.
+                              </p>
+                            </div>
+                            <span className="px-3 py-1.5 bg-teal-900/80 text-teal-300 border border-teal-700/80 font-bold text-[10px] rounded-lg shrink-0">
+                              Awaiting Volunteer
+                            </span>
+                          </div>
+                        )}
+
+                        {req.status === 'accepted' && (
+                          <div className="p-3.5 bg-emerald-950/70 border border-emerald-500/60 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                            <div>
+                              <h4 className="font-extrabold text-xs text-emerald-300 flex items-center gap-1.5">
+                                <Navigation className="w-4 h-4 text-emerald-400 animate-pulse" />
+                                Step 2 Active: Volunteer {vol?.name || 'Rescue Volunteer'} Dispatched
+                              </h4>
+                              <p className="text-[10px] text-slate-300">
+                                Volunteer <b>{vol?.name || 'Rescue Volunteer'}</b> ({vol?.vehicleType || 'Vehicle'}) is en route to pick up food from <b>{donorDisplayName}</b>.
+                              </p>
+                            </div>
+                            <span className="px-3 py-1.5 bg-emerald-900/80 text-emerald-300 border border-emerald-700/80 font-bold text-[10px] rounded-lg shrink-0">
+                              En Route to Pickup
+                            </span>
+                          </div>
+                        )}
+
+                        {req.status === 'in_transit' && (
+                          <div className="p-3.5 bg-amber-950/80 border border-amber-500/70 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                            <div>
+                              <h4 className="font-extrabold text-xs text-amber-300 flex items-center gap-1.5">
+                                <PackageCheck className="w-4 h-4 text-amber-400 animate-pulse" />
+                                Step 4 Action Required: Confirm Food Arrival at Shelter
+                              </h4>
+                              <p className="text-[10px] text-slate-300">
+                                Volunteer <b>{vol?.name || 'Volunteer'}</b> has picked up the food from {donorDisplayName} and is arriving at <b>{shelterName}</b>. Click below to verify delivery!
                               </p>
                             </div>
                             <button
@@ -376,11 +491,12 @@ export const NGOPortal: React.FC = () => {
                         )}
 
                         {req.status === 'delivered' && (
-                          <div className="p-3 bg-emerald-950/60 border border-emerald-500/60 rounded-xl text-xs text-emerald-300 font-extrabold text-center flex items-center justify-center gap-2">
+                          <div className="p-3.5 bg-emerald-950/60 border border-emerald-500/60 rounded-xl text-xs text-emerald-300 font-extrabold text-center flex items-center justify-center gap-2">
                             <CheckCircle2 className="w-4 h-4 text-emerald-400" />
                             <span>Food Relief Received! {req.estimatedServings} Meals Served to Shelter Beneficiaries.</span>
                           </div>
                         )}
+
                       </div>
 
                     </div>

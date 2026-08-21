@@ -113,11 +113,33 @@ const INITIAL_REQUESTS: DonationRequest[] = [
     cookedTimestamp: new Date(Date.now() - 45 * 60 * 1000).toISOString(),
     goldenHourDeadline: new Date(Date.now() + 135 * 60 * 1000).toISOString(),
     location: { lat: 13.0400, lng: 80.2300, address: '45 Pondy Bazaar, T. Nagar, Chennai', areaName: 'T. Nagar' },
-    status: 'requested',
+    status: 'matched',
+    matchedShelterName: 'Hope Children Shelter & NGO',
+    matchedDonorRequestId: 'req-102',
     isSmallQuantity: false,
     createdAt: new Date(Date.now() - 45 * 60 * 1000).toISOString(),
     notes: 'Pure vegetarian meal (rice, sambar, vada, payasam). Hot and packed in stainless steel containers.',
     earnedPoints: 400
+  },
+  {
+    id: 'req-102',
+    donorName: 'Hope Children Shelter & NGO',
+    donorPhone: '+91 98400 55443',
+    foodType: 'Veg Meals',
+    quantityKg: 35,
+    estimatedServings: 120,
+    photoUrl: 'https://images.unsplash.com/photo-1593113598332-cd288d649433?w=600&auto=format&fit=crop&q=60',
+    cookedTimestamp: new Date(Date.now() - 45 * 60 * 1000).toISOString(),
+    goldenHourDeadline: new Date(Date.now() + 135 * 60 * 1000).toISOString(),
+    location: { lat: 13.0410, lng: 80.2320, address: '88 Usman Road, T. Nagar, Chennai', areaName: 'T. Nagar' },
+    status: 'matched',
+    requestType: 'shelter_need',
+    matchedDonorRequestId: 'req-101',
+    matchedShelterName: 'Hope Children Shelter & NGO',
+    isSmallQuantity: false,
+    createdAt: new Date(Date.now() - 45 * 60 * 1000).toISOString(),
+    notes: '[NGO RELIEF NEED] 120 children at shelter. Hot meals needed for dinner.',
+    earnedPoints: 300
   }
 ];
 
@@ -200,8 +222,14 @@ export const FoodBridgeProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     return saved ? JSON.parse(saved) : null;
   });
 
-  const [requests, setRequests] = useState<DonationRequest[]>(INITIAL_REQUESTS);
-  const [volunteers, setVolunteers] = useState<Volunteer[]>(INITIAL_VOLUNTEERS);
+  const [requests, setRequests] = useState<DonationRequest[]>(() => {
+    const saved = localStorage.getItem('foodbridge_requests');
+    return saved ? JSON.parse(saved) : INITIAL_REQUESTS;
+  });
+  const [volunteers, setVolunteers] = useState<Volunteer[]>(() => {
+    const saved = localStorage.getItem('foodbridge_volunteers');
+    return saved ? JSON.parse(saved) : INITIAL_VOLUNTEERS;
+  });
   const [vehicles] = useState<Vehicle[]>(INITIAL_VEHICLES);
   const [hotspots] = useState<HungerHotspot[]>(INITIAL_HOTSPOTS);
   const [batches, setBatches] = useState<PoolingBatch[]>([]);
@@ -213,6 +241,14 @@ export const FoodBridgeProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   useEffect(() => {
     localStorage.setItem('foodbridge_registered_users', JSON.stringify(registeredUsers));
   }, [registeredUsers]);
+
+  useEffect(() => {
+    localStorage.setItem('foodbridge_requests', JSON.stringify(requests));
+  }, [requests]);
+
+  useEffect(() => {
+    localStorage.setItem('foodbridge_volunteers', JSON.stringify(volunteers));
+  }, [volunteers]);
 
   useEffect(() => {
     if (authUser) {
@@ -442,9 +478,6 @@ export const FoodBridgeProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         matchedDonorRequestId = matchingDonorOffer.id;
         matchedShelterName = requestData.donorName;
 
-        // Update donor offer status
-        setRequests(prev => prev.map(r => r.id === matchingDonorOffer.id ? { ...r, status: 'matched', matchedShelterName: requestData.donorName } : r));
-
         addNotification(
           'volunteer',
           '⚡ Donor Surplus Matched!',
@@ -452,7 +485,6 @@ export const FoodBridgeProvider: React.FC<{ children: React.ReactNode }> = ({ ch
           id
         );
       } else {
-        // No donor available yet
         initialStatus = 'needy_demand';
 
         addNotification(
@@ -469,9 +501,7 @@ export const FoodBridgeProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       if (pendingShelterNeed) {
         initialStatus = 'matched';
         matchedShelterName = pendingShelterNeed.donorName;
-
-        // Update shelter need status
-        setRequests(prev => prev.map(r => r.id === pendingShelterNeed.id ? { ...r, status: 'matched', matchedDonorRequestId: id } : r));
+        matchedDonorRequestId = pendingShelterNeed.id;
 
         addNotification(
           'volunteer',
@@ -504,25 +534,57 @@ export const FoodBridgeProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       createdAt: new Date().toISOString()
     };
 
-    setRequests(prev => [newReq, ...prev]);
+    // Single atomic state update to prevent race conditions
+    setRequests(prev => {
+      let updated = prev;
+      if (reqType === 'shelter_need' && matchedDonorRequestId) {
+        updated = prev.map(r => r.id === matchedDonorRequestId ? { ...r, status: 'matched', matchedShelterName: requestData.donorName, matchedDonorRequestId: id } : r);
+      } else if (reqType === 'donor_offer' && matchedDonorRequestId) {
+        updated = prev.map(r => r.id === matchedDonorRequestId ? { ...r, status: 'matched', matchedDonorRequestId: id, matchedShelterName: pendingShelterNeedDonorName(prev) } : r);
+      }
+      return [newReq, ...updated];
+    });
+
     return id;
   };
+
+  const pendingShelterNeedDonorName = (list: DonationRequest[]) => {
+    const p = list.find(r => r.status === 'needy_demand');
+    return p ? p.donorName : undefined;
+  };
+
   const updateRequestStatus = (requestId: string, status: RequestStatus, extraData?: Partial<DonationRequest>) => {
     setRequests(prev => {
       const target = prev.find(r => r.id === requestId);
       if (!target) return prev;
 
+      // Find all linked request IDs across donor offer & NGO relief need
       const linkedIds = new Set<string>([requestId]);
       if (target.matchedDonorRequestId) linkedIds.add(target.matchedDonorRequestId);
+
       prev.forEach(r => {
-        if (r.matchedDonorRequestId === requestId || (r.matchedShelterName && r.matchedShelterName === target.donorName)) {
+        if (
+          r.matchedDonorRequestId === requestId ||
+          (target.matchedDonorRequestId && r.id === target.matchedDonorRequestId) ||
+          (r.matchedDonorRequestId && target.matchedDonorRequestId && r.matchedDonorRequestId === target.matchedDonorRequestId) ||
+          (target.matchedShelterName && (r.donorName === target.matchedShelterName || r.matchedShelterName === target.matchedShelterName)) ||
+          (r.matchedShelterName && (r.matchedShelterName === target.donorName || r.matchedShelterName === target.matchedShelterName))
+        ) {
           linkedIds.add(r.id);
         }
       });
 
       return prev.map(req => {
         if (linkedIds.has(req.id)) {
-          const updated = { ...req, status, ...extraData };
+          const updated = {
+            ...req,
+            status,
+            ...extraData,
+            assignedVolunteerId: extraData?.assignedVolunteerId || req.assignedVolunteerId || target.assignedVolunteerId,
+            assignedVehicleId: extraData?.assignedVehicleId || req.assignedVehicleId || target.assignedVehicleId,
+            matchedShelterName: req.matchedShelterName || target.matchedShelterName,
+            matchedDonorRequestId: req.matchedDonorRequestId || target.matchedDonorRequestId
+          };
 
           if (status === 'delivered') {
             setVolunteers(vPrev =>
@@ -549,15 +611,21 @@ export const FoodBridgeProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   };
 
   const assignVolunteerToRequest = (requestId: string, volunteerId: string) => {
-    const vol = volunteers.find(v => v.id === volunteerId);
+    const vol = volunteers.find(v => v.id === volunteerId || v.name === volunteerId) || (authUser?.id === volunteerId ? authUser : null);
     setRequests(prev => {
       const target = prev.find(r => r.id === requestId);
       if (!target) return prev;
 
       const linkedIds = new Set<string>([requestId]);
       if (target.matchedDonorRequestId) linkedIds.add(target.matchedDonorRequestId);
+
       prev.forEach(r => {
-        if (r.matchedDonorRequestId === requestId || (r.matchedShelterName && r.matchedShelterName === target.donorName)) {
+        if (
+          r.matchedDonorRequestId === requestId ||
+          (target.matchedDonorRequestId && r.id === target.matchedDonorRequestId) ||
+          (target.matchedShelterName && (r.donorName === target.matchedShelterName || r.matchedShelterName === target.matchedShelterName)) ||
+          (r.matchedShelterName && (r.matchedShelterName === target.donorName || r.matchedShelterName === target.matchedShelterName))
+        ) {
           linkedIds.add(r.id);
         }
       });
@@ -568,7 +636,8 @@ export const FoodBridgeProvider: React.FC<{ children: React.ReactNode }> = ({ ch
             ...req,
             status: 'accepted',
             assignedVolunteerId: volunteerId,
-            assignedVehicleId: vol?.vehicleType === 'Three Wheeler (Auto)' ? 'veh-1' : 'veh-2'
+            assignedVehicleId: vol?.vehicleType === 'Three Wheeler (Auto)' ? 'veh-1' : 'veh-2',
+            matchedShelterName: req.matchedShelterName || target.matchedShelterName
           };
         }
         return req;
@@ -576,7 +645,7 @@ export const FoodBridgeProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     });
 
     setVolunteers(prev =>
-      prev.map(v => (v.id === volunteerId ? { ...v, status: 'busy', currentAssignedRequestId: requestId } : v))
+      prev.map(v => (v.id === volunteerId || v.name === volunteerId ? { ...v, status: 'busy', currentAssignedRequestId: requestId } : v))
     );
 
     const req = requests.find(r => r.id === requestId);
@@ -584,7 +653,7 @@ export const FoodBridgeProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       addNotification(
         'donor',
         '🚀 Volunteer Accepted Your Food Order!',
-        `Volunteer ${vol?.name} (${vol?.vehicleType}) accepted your request and is on the way to ${req.location.areaName}.`,
+        `Volunteer ${vol?.name || 'Rescue Volunteer'} (${vol?.vehicleType || 'Vehicle'}) accepted your request and is on the way to ${req.location.areaName}.`,
         requestId
       );
     }

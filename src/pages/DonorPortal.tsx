@@ -77,12 +77,19 @@ export const DonorPortal: React.FC = () => {
     confetti({ particleCount: 100, spread: 80, origin: { y: 0.6 } });
   };
 
-  const myRequests = requests.filter(r => 
-    (r.donorId && r.donorId === authUser?.id) || 
-    r.donorName === authUser?.name ||
-    (authUser?.establishmentName && r.donorName === authUser?.establishmentName) ||
-    (!authUser || authUser.role === 'admin')
-  );
+  const currentDonorName = (authUser?.establishmentName || authUser?.name || donorName || '').trim().toLowerCase();
+  const currentDonorId = authUser?.id;
+
+  const myRequests = requests.filter(r => {
+    if (r.requestType === 'shelter_need') return false;
+
+    const isOwner = Boolean(
+      (currentDonorId && r.donorId === currentDonorId) ||
+      (currentDonorName && r.donorName.trim().toLowerCase() === currentDonorName)
+    );
+
+    return isOwner;
+  });
 
   const samplePhotos = [
     { label: 'Veg Meals', url: 'https://images.unsplash.com/photo-1555244162-803834f70033?w=600&auto=format&fit=crop&q=60' },
