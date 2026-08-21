@@ -433,17 +433,32 @@ export const FoodBridgeProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     setChatMessages(prev => [...prev, newMsg]);
   };
 
-  const addNotification = (recipientRole: UserRole, title: string, message: string, requestId?: string) => {
-    const notif: NotificationAlert = {
-      id: `notif-${Date.now()}`,
-      recipientRole,
-      title,
-      message,
-      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      read: false,
-      requestId
-    };
-    setNotifications(prev => [notif, ...prev]);
+  const addNotification = (
+    recipientRole: UserRole,
+    title: string,
+    message: string,
+    requestId?: string,
+    recipientId?: string
+  ) => {
+    setNotifications(prev => {
+      // Deduplicate: prevent identical notification within 10 seconds
+      const isDuplicate = prev.some(
+        n => n.title === title && n.message === message && n.recipientRole === recipientRole && n.recipientId === recipientId
+      );
+      if (isDuplicate) return prev;
+
+      const notif: NotificationAlert = {
+        id: `notif-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+        recipientRole,
+        recipientId,
+        title,
+        message,
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        read: false,
+        requestId
+      };
+      return [notif, ...prev.slice(0, 15)];
+    });
   };
 
   const clearNotification = (id: string) => {
@@ -466,7 +481,6 @@ export const FoodBridgeProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     let matchedDonorRequestId = requestData.matchedDonorRequestId;
 
     if (reqType === 'shelter_need') {
-      // Look for an available donor surplus offer in state
       const matchingDonorOffer = requests.find(r => 
         r.requestType !== 'shelter_need' && 
         (r.status === 'requested' || r.status === 'pooled') &&
@@ -478,24 +492,25 @@ export const FoodBridgeProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         matchedDonorRequestId = matchingDonorOffer.id;
         matchedShelterName = requestData.donorName;
 
+        // Notify Volunteers about the matched delivery mission
         addNotification(
           'volunteer',
-          '⚡ Donor Surplus Matched!',
-          `Surplus food from ${matchingDonorOffer.donorName} is matched & assigned for delivery to ${requestData.donorName}.`,
+          '⚡ Food Relief Matched with Surplus Donor!',
+          `Food relief for ${requestData.donorName} is matched with surplus meals from ${matchingDonorOffer.donorName}. Ready for volunteer pickup!`,
           id
         );
       } else {
         initialStatus = 'needy_demand';
 
+        // Notify Volunteers about new NGO Relief Need
         addNotification(
           'volunteer',
-          '📢 Food Relief Need Registered (Awaiting Donor Match)',
-          `Food relief request from ${requestData.donorName} (${requestData.estimatedServings} meals in ${requestData.location.areaName}). Awaiting surplus food donor.`,
+          '📢 New Food Relief Need Registered!',
+          `Food relief requirement submitted by ${requestData.donorName} (${requestData.estimatedServings} meals in ${requestData.location.areaName}).`,
           id
         );
       }
     } else {
-      // Donor Offer: Look for a pending shelter need
       const pendingShelterNeed = requests.find(r => r.status === 'needy_demand');
 
       if (pendingShelterNeed) {
@@ -503,19 +518,21 @@ export const FoodBridgeProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         matchedShelterName = pendingShelterNeed.donorName;
         matchedDonorRequestId = pendingShelterNeed.id;
 
+        // Notify Volunteers about the matched rescue order
         addNotification(
           'volunteer',
-          '⚡ Donor Surplus Matched!',
-          `Surplus food from ${requestData.donorName} is matched & assigned for delivery to ${pendingShelterNeed.donorName}.`,
+          '⚡ Donor Surplus Matched with Shelter Need!',
+          `Surplus food from ${requestData.donorName} is matched with ${pendingShelterNeed.donorName}. Ready for volunteer dispatch!`,
           id
         );
       } else {
         initialStatus = isSmallQuantity ? 'pooled' : 'requested';
 
+        // Notify Volunteers about incoming surplus food donation
         addNotification(
           'volunteer',
-          '⚡ New Swiggy-Style Rescue Dispatch!',
-          `Incoming surplus food order from ${requestData.donorName} (${requestData.quantityKg} kg in ${requestData.location.areaName}).`,
+          '⚡ New Surplus Food Rescue Available!',
+          `Fresh surplus food offered by ${requestData.donorName} (${requestData.quantityKg} kg in ${requestData.location.areaName}). Open to accept on live radar!`,
           id
         );
       }
@@ -595,12 +612,26 @@ export const FoodBridgeProvider: React.FC<{ children: React.ReactNode }> = ({ ch
               )
             );
 
+            // 1. Notify Donor: Delivered & Points Earned
             addNotification(
               'donor',
               '🎉 Food Delivered & Impact Points Earned!',
-              `Your food donation from ${req.donorName} was delivered successfully. +${req.earnedPoints || 300} points awarded!`,
-              req.id
+              `Your food donation from ${req.donorName} was delivered successfully to ${req.matchedShelterName || target.matchedShelterName || 'the shelter'}. +${req.earnedPoints || 300} points awarded!`,
+              req.id,
+              req.donorId || req.donorName
             );
+
+            // 2. Notify Volunteer: Mission Completed & Points Awarded
+            const volId = req.assignedVolunteerId || target.assignedVolunteerId;
+            if (volId) {
+              addNotification(
+                'volunteer',
+                '🏆 Delivery Confirmed & Mission Completed!',
+                `NGO confirmed receipt of food relief for ${req.matchedShelterName || target.matchedShelterName || 'Shelter'}. +70 volunteer points awarded!`,
+                req.id,
+                volId
+              );
+            }
           }
 
           return updated;
@@ -664,12 +695,29 @@ export const FoodBridgeProvider: React.FC<{ children: React.ReactNode }> = ({ ch
 
     const req = requests.find(r => r.id === requestId);
     if (req) {
+      const volName = vol?.name || 'Rescue Volunteer';
+      const volVehicle = vol?.vehicleType || 'Vehicle';
+
+      // 1. Notify Donor: Volunteer accepted order
       addNotification(
         'donor',
         '🚀 Volunteer Accepted Your Food Order!',
-        `Volunteer ${vol?.name || 'Rescue Volunteer'} (${vol?.vehicleType || 'Vehicle'}) accepted your request and is on the way to ${req.location.areaName}.`,
-        requestId
+        `Volunteer ${volName} (${volVehicle}) accepted your request and is on the way to ${req.location.areaName} for pickup.`,
+        requestId,
+        req.donorId || req.donorName
       );
+
+      // 2. Notify NGO: Volunteer dispatched to collect food
+      const shelterTarget = req.matchedShelterName;
+      if (shelterTarget) {
+        addNotification(
+          'ngo',
+          '🚴 Volunteer Dispatched for Your Shelter Relief!',
+          `Volunteer ${volName} is en route to collect fresh meals from ${req.donorName} for your shelter!`,
+          requestId,
+          shelterTarget
+        );
+      }
     }
   };
 

@@ -52,6 +52,7 @@ export interface ChatMessage {
 export interface NotificationAlert {
   id: string;
   recipientRole: UserRole;
+  recipientId?: string;
   title: string;
   message: string;
   timestamp: string;
