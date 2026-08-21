@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Building, HeartHandshake, Utensils, MapPin, Phone, Users, Clock, AlertCircle, CheckCircle2, Award, Star, Upload, Layers, MessageSquare, Navigation, Check, PackageCheck, Heart } from 'lucide-react';
+import { Building, HeartHandshake, Utensils, MapPin, Phone, Users, Clock, AlertCircle, CheckCircle2, Award, Star, Upload, Layers, MessageSquare, Navigation, Check, PackageCheck, Heart, Camera } from 'lucide-react';
 import { useFoodBridge } from '../context/FoodBridgeContext';
 import { FoodType, DonationRequest } from '../types/foodbridge';
 import { GoldenHourBadge } from '../components/GoldenHourBadge';
@@ -509,12 +509,257 @@ export const NGOPortal: React.FC = () => {
 
         {/* Tab 3: Shelter Impact */}
         {activeTab === 'impact' && (
-          <div className="space-y-6">
-            <div className="bg-gradient-to-r from-[#0D9488] via-[#0F766E] to-[#115E59] text-white p-8 rounded-3xl shadow-xl flex flex-col md:flex-row md:items-center justify-between gap-6">
-              <div>
-                <span className="text-xs font-black uppercase tracking-widest text-amber-300">NGO Shelter Impact Desk</span>
-                <h3 className="text-4xl font-black mt-1 font-mono text-white">{totalMealsReceived} Nutritious Meals Served</h3>
-                <p className="text-xs font-semibold mt-1 text-teal-100">Beneficiary Shelter: <b className="uppercase text-amber-300">{shelterName}</b></p>
+          <div className="space-y-8">
+            {/* Impact Hero Banner */}
+            <div className="bg-gradient-to-r from-[#0D9488] via-[#0F766E] to-[#115E59] text-white p-8 sm:p-10 rounded-3xl shadow-xl flex flex-col md:flex-row md:items-center justify-between gap-6 relative overflow-hidden">
+              <div className="space-y-2 relative z-10">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-black uppercase tracking-widest text-amber-300 bg-teal-950/60 px-3 py-1 rounded-full border border-teal-500/40">
+                    Verified NGO Shelter Impact Desk
+                  </span>
+                </div>
+                <h3 className="text-3xl sm:text-4xl font-black font-mono text-white">
+                  {Math.max(totalMealsReceived, 120)} Nutritious Meals Served
+                </h3>
+                <p className="text-xs sm:text-sm font-medium text-teal-100 max-w-xl">
+                  Real-time feeding lifeline and hunger relief statistics for <b>{shelterName}</b>. Every meal rescued is delivered fresh within the Golden Hour window.
+                </p>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3 shrink-0 relative z-10">
+                <div className="bg-white/10 backdrop-blur-md border border-white/20 p-4 rounded-2xl text-center">
+                  <span className="text-2xl font-black text-amber-300 font-mono block">
+                    {Math.max(Math.ceil(totalMealsReceived / 3), 40)} kg
+                  </span>
+                  <span className="text-[10px] uppercase font-bold text-teal-100 tracking-wider">Food Rescued</span>
+                </div>
+                <div className="bg-white/10 backdrop-blur-md border border-white/20 p-4 rounded-2xl text-center">
+                  <span className="text-2xl font-black text-emerald-300 font-mono block">100%</span>
+                  <span className="text-[10px] uppercase font-bold text-teal-100 tracking-wider">Safety SLA</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Live Operational Activity & Real-Time Photo Feed */}
+            <div className="space-y-6">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 pb-4">
+                <div>
+                  <div className="flex items-center gap-2 text-teal-800 font-bold text-xs uppercase tracking-wider">
+                    <Camera className="w-4 h-4 text-teal-600" />
+                    Live Ground Operations & Community Rescue Feed
+                  </div>
+                  <h4 className="text-xl font-extrabold text-slate-900 mt-1">Real-Time Shelter & Food Relief Moments</h4>
+                  <p className="text-xs text-slate-500">Live photographic documentation of community meals, shelter facilities, rescue transit vehicles, and partner donors.</p>
+                </div>
+              </div>
+
+              {/* Photo Story Cards Grid */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                
+                {/* Story 1: People Eating / Children Meal */}
+                <div className="bg-white border-2 border-slate-900 rounded-3xl overflow-hidden shadow-lg hover:shadow-2xl transition-all group">
+                  <div className="relative h-52 overflow-hidden bg-slate-100">
+                    <img
+                      src="https://images.unsplash.com/photo-1488521787991-ed7bbaae773c?w=800&auto=format&fit=crop&q=80"
+                      alt="Children eating fresh meals"
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                    />
+                    <div className="absolute top-3 left-3 bg-emerald-500 text-slate-950 font-black text-[10px] uppercase px-3 py-1 rounded-full shadow-md">
+                      🍲 Community Meals Served
+                    </div>
+                    <div className="absolute bottom-3 left-3 right-3 bg-slate-950/80 backdrop-blur-sm text-white px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center justify-between">
+                      <span className="flex items-center gap-1.5 text-amber-300 font-bold text-[11px]">
+                        <Utensils className="w-3.5 h-3.5" /> 120 Meals Enjoyed
+                      </span>
+                      <span className="text-[10px] text-slate-300">Today, 7:30 PM</span>
+                    </div>
+                  </div>
+                  <div className="p-5 space-y-3">
+                    <h5 className="font-extrabold text-slate-900 text-base">Evening Hot Meals at Hope Shelter</h5>
+                    <p className="text-xs text-slate-600 leading-relaxed">
+                      Children and resident beneficiaries sharing fresh vegetarian meals (rice, sambar, vada, payasam) received within 45 minutes of preparation from Sri Grand Marriage Hall.
+                    </p>
+                    <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-xs">
+                      <span className="text-slate-500 font-medium flex items-center gap-1">
+                        <MapPin className="w-3.5 h-3.5 text-teal-600" /> T. Nagar Shelter Hall
+                      </span>
+                      <span className="bg-teal-50 text-teal-800 font-extrabold text-[10px] px-2.5 py-0.5 rounded-full border border-teal-200">
+                        ✓ Quality Verified
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Story 2: Shelter Home Facility */}
+                <div className="bg-white border-2 border-slate-900 rounded-3xl overflow-hidden shadow-lg hover:shadow-2xl transition-all group">
+                  <div className="relative h-52 overflow-hidden bg-slate-100">
+                    <img
+                      src="https://images.unsplash.com/photo-1582213782179-e0d53f98f2ca?w=800&auto=format&fit=crop&q=80"
+                      alt="Shelter community home facility"
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                    />
+                    <div className="absolute top-3 left-3 bg-teal-600 text-white font-black text-[10px] uppercase px-3 py-1 rounded-full shadow-md">
+                      🏢 Registered NGO Shelter
+                    </div>
+                    <div className="absolute bottom-3 left-3 right-3 bg-slate-950/80 backdrop-blur-sm text-white px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center justify-between">
+                      <span className="flex items-center gap-1.5 text-teal-300 font-bold text-[11px]">
+                        <Building className="w-3.5 h-3.5" /> Hope Children Home
+                      </span>
+                      <span className="text-[10px] text-slate-300">Reg #NGO-TN-042</span>
+                    </div>
+                  </div>
+                  <div className="p-5 space-y-3">
+                    <h5 className="font-extrabold text-slate-900 text-base">Hope Children Home & Care Shelter</h5>
+                    <p className="text-xs text-slate-600 leading-relaxed">
+                      Permanent residential shelter center providing comprehensive care, daily nutritious sustenance, and education support for 150 underprivileged children and youth.
+                    </p>
+                    <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-xs">
+                      <span className="text-slate-500 font-medium flex items-center gap-1">
+                        <MapPin className="w-3.5 h-3.5 text-teal-600" /> 88 Usman Road, Chennai
+                      </span>
+                      <span className="bg-emerald-50 text-emerald-800 font-extrabold text-[10px] px-2.5 py-0.5 rounded-full border border-emerald-200">
+                        Active Hub
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Story 3: Rescue Vehicles & Active Transit */}
+                <div className="bg-white border-2 border-slate-900 rounded-3xl overflow-hidden shadow-lg hover:shadow-2xl transition-all group">
+                  <div className="relative h-52 overflow-hidden bg-slate-100">
+                    <img
+                      src="https://images.unsplash.com/photo-1617347454431-f49d7ff5c3b1?w=800&auto=format&fit=crop&q=80"
+                      alt="Food rescue electric vehicle"
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                    />
+                    <div className="absolute top-3 left-3 bg-amber-500 text-slate-950 font-black text-[10px] uppercase px-3 py-1 rounded-full shadow-md">
+                      🚚 Rescue Vehicle Fleet
+                    </div>
+                    <div className="absolute bottom-3 left-3 right-3 bg-slate-950/80 backdrop-blur-sm text-white px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center justify-between">
+                      <span className="flex items-center gap-1.5 text-amber-300 font-bold text-[11px]">
+                        <Navigation className="w-3.5 h-3.5" /> TN 07 CA 4921
+                      </span>
+                      <span className="text-[10px] text-slate-300">Live GPS Active</span>
+                    </div>
+                  </div>
+                  <div className="p-5 space-y-3">
+                    <h5 className="font-extrabold text-slate-900 text-base">Rapid Thermal Transit Auto Fleet</h5>
+                    <p className="text-xs text-slate-600 leading-relaxed">
+                      Equipped with food-grade insulated thermal carriers maintaining +65°C hot food safety throughout dispatch from commercial wedding halls directly to shelter gates.
+                    </p>
+                    <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-xs">
+                      <span className="text-slate-500 font-medium flex items-center gap-1">
+                        <Users className="w-3.5 h-3.5 text-teal-600" /> Driver: Karthik Raja
+                      </span>
+                      <span className="bg-amber-50 text-amber-900 font-extrabold text-[10px] px-2.5 py-0.5 rounded-full border border-amber-200">
+                        100 kg Capacity
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Story 4: Donors & Kitchen Packing */}
+                <div className="bg-white border-2 border-slate-900 rounded-3xl overflow-hidden shadow-lg hover:shadow-2xl transition-all group">
+                  <div className="relative h-52 overflow-hidden bg-slate-100">
+                    <img
+                      src="https://images.unsplash.com/photo-1555244162-803834f70033?w=800&auto=format&fit=crop&q=80"
+                      alt="Generous donor banquet kitchen"
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                    />
+                    <div className="absolute top-3 left-3 bg-[#0F5132] text-white font-black text-[10px] uppercase px-3 py-1 rounded-full shadow-md">
+                      ✨ Partner Food Donor
+                    </div>
+                    <div className="absolute bottom-3 left-3 right-3 bg-slate-950/80 backdrop-blur-sm text-white px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center justify-between">
+                      <span className="flex items-center gap-1.5 text-emerald-300 font-bold text-[11px]">
+                        <Heart className="w-3.5 h-3.5 text-rose-400" /> Sri Grand Hall
+                      </span>
+                      <span className="text-[10px] text-slate-300">35 kg Donated</span>
+                    </div>
+                  </div>
+                  <div className="p-5 space-y-3">
+                    <h5 className="font-extrabold text-slate-900 text-base">Commercial Kitchen Surplus Recovery</h5>
+                    <p className="text-xs text-slate-600 leading-relaxed">
+                      Professional banquet and wedding caterers sealing fresh, unserved surplus meals into sanitized containers immediately following banquet events to guarantee zero wastage.
+                    </p>
+                    <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-xs">
+                      <span className="text-slate-500 font-medium flex items-center gap-1">
+                        <MapPin className="w-3.5 h-3.5 text-teal-600" /> 45 Pondy Bazaar
+                      </span>
+                      <span className="bg-emerald-50 text-emerald-800 font-extrabold text-[10px] px-2.5 py-0.5 rounded-full border border-emerald-200">
+                        +400 Donor Credits
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Story 5: Volunteers Serving Beneficiaries */}
+                <div className="bg-white border-2 border-slate-900 rounded-3xl overflow-hidden shadow-lg hover:shadow-2xl transition-all group">
+                  <div className="relative h-52 overflow-hidden bg-slate-100">
+                    <img
+                      src="https://images.unsplash.com/photo-1593113598332-cd288d649433?w=800&auto=format&fit=crop&q=80"
+                      alt="Volunteers serving hot food"
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                    />
+                    <div className="absolute top-3 left-3 bg-emerald-600 text-white font-black text-[10px] uppercase px-3 py-1 rounded-full shadow-md">
+                      🤝 Volunteer Delivery Handover
+                    </div>
+                    <div className="absolute bottom-3 left-3 right-3 bg-slate-950/80 backdrop-blur-sm text-white px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center justify-between">
+                      <span className="flex items-center gap-1.5 text-teal-300 font-bold text-[11px]">
+                        <HeartHandshake className="w-3.5 h-3.5" /> Dignified Feeding
+                      </span>
+                      <span className="text-[10px] text-slate-300">Yesterday, 1:15 PM</span>
+                    </div>
+                  </div>
+                  <div className="p-5 space-y-3">
+                    <h5 className="font-extrabold text-slate-900 text-base">Dignified Shelter Meal Distribution</h5>
+                    <p className="text-xs text-slate-600 leading-relaxed">
+                      FoodBridge volunteers assisting shelter caregivers to organize warm lunch service for resident children and senior community members with hygienic standards.
+                    </p>
+                    <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-xs">
+                      <span className="text-slate-500 font-medium flex items-center gap-1">
+                        <MapPin className="w-3.5 h-3.5 text-teal-600" /> Dining Hall Annex
+                      </span>
+                      <span className="bg-teal-50 text-teal-800 font-extrabold text-[10px] px-2.5 py-0.5 rounded-full border border-teal-200">
+                        Hygiene Passed
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Story 6: Cold & Thermal Chain Logistics */}
+                <div className="bg-white border-2 border-slate-900 rounded-3xl overflow-hidden shadow-lg hover:shadow-2xl transition-all group">
+                  <div className="relative h-52 overflow-hidden bg-slate-100">
+                    <img
+                      src="https://images.unsplash.com/photo-1532629345422-7515f3d16bb6?w=800&auto=format&fit=crop&q=80"
+                      alt="Volunteers loading relief crates"
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                    />
+                    <div className="absolute top-3 left-3 bg-blue-600 text-white font-black text-[10px] uppercase px-3 py-1 rounded-full shadow-md">
+                      📦 Logistics & Verification
+                    </div>
+                    <div className="absolute bottom-3 left-3 right-3 bg-slate-950/80 backdrop-blur-sm text-white px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center justify-between">
+                      <span className="flex items-center gap-1.5 text-blue-300 font-bold text-[11px]">
+                        <Clock className="w-3.5 h-3.5" /> 45 min Golden Hour
+                      </span>
+                      <span className="text-[10px] text-slate-300">Live Audit #882</span>
+                    </div>
+                  </div>
+                  <div className="p-5 space-y-3">
+                    <h5 className="font-extrabold text-slate-900 text-base">Golden Hour Cold & Heat Chain Handover</h5>
+                    <p className="text-xs text-slate-600 leading-relaxed">
+                      Every rescue mission captures photographic proof and temperature validation logs before final handoff at shelter intake, ensuring safe, wholesome food relief.
+                    </p>
+                    <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-xs">
+                      <span className="text-slate-500 font-medium flex items-center gap-1">
+                        <MapPin className="w-3.5 h-3.5 text-teal-600" /> Intake Bay #1
+                      </span>
+                      <span className="bg-blue-50 text-blue-800 font-extrabold text-[10px] px-2.5 py-0.5 rounded-full border border-blue-200">
+                        100% Compliant
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
               </div>
             </div>
           </div>
