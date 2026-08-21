@@ -1,14 +1,16 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Navigation, CheckSquare, ShieldCheck, Camera, MapPin, Award, CheckCircle2, ChevronRight, Upload, AlertCircle, MessageSquare, Star, Zap, PackageCheck } from 'lucide-react';
+import L from 'leaflet';
 import { useFoodBridge } from '../context/FoodBridgeContext';
 import { VolunteerStatus, DonationRequest } from '../types/foodbridge';
 import { GoldenHourBadge } from '../components/GoldenHourBadge';
 import { VolunteerQuizModal } from '../components/VolunteerQuizModal';
 import { LiveChatModal } from '../components/LiveChatModal';
+import { haversineDistance, getBrowserLocation, reverseGeocode } from '../utils/geoUtils';
 import confetti from 'canvas-confetti';
 
 export const VolunteerApp: React.FC = () => {
-  const { authUser, volunteers, requests, updateRequestStatus, assignVolunteerToRequest, toggleVolunteerStatus, trainingModules, completeTrainingModule, volunteerPoints } = useFoodBridge();
+  const { authUser, volunteers, requests, updateRequestStatus, assignVolunteerToRequest, toggleVolunteerStatus, trainingModules, completeTrainingModule, volunteerPoints, updateVolunteerLocation } = useFoodBridge();
   const [activeTab, setActiveTab] = useState<'tasks' | 'incoming' | 'completed' | 'training' | 'profile'>('incoming');
   const [showQuizModal, setShowQuizModal] = useState<boolean>(false);
   const [activeChatRequest, setActiveChatRequest] = useState<DonationRequest | null>(null);
@@ -50,12 +52,104 @@ export const VolunteerApp: React.FC = () => {
   const [pickupPhotoFile, setPickupPhotoFile] = useState<string | null>(null);
   const [deliveryPhotoFile, setDeliveryPhotoFile] = useState<string | null>(null);
   const [recipientName, setRecipientName] = useState('Anitha (Koyambedu Shelter)');
+  const [geoStatus, setGeoStatus] = useState<'idle' | 'locating' | 'success' | 'denied'>('idle');
+
+  // Mini-map refs
+  const miniMapRef = useRef<HTMLDivElement>(null);
+  const miniMapInstanceRef = useRef<L.Map | null>(null);
+  const miniMarkerRef = useRef<L.Marker | null>(null);
+
+  // Request browser geolocation on mount
+  useEffect(() => {
+    const fetchLocation = async () => {
+      setGeoStatus('locating');
+      try {
+        const { lat, lng } = await getBrowserLocation();
+        const { address, areaName } = await reverseGeocode(lat, lng);
+        updateVolunteerLocation(currentVolunteer.id, lat, lng, address, areaName);
+        setGeoStatus('success');
+      } catch {
+        setGeoStatus('denied');
+      }
+    };
+    fetchLocation();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Initialize mini-map
+  useEffect(() => {
+    if (!miniMapRef.current) return;
+    if (!miniMapInstanceRef.current) {
+      const map = L.map(miniMapRef.current, {
+        center: [currentVolunteer.currentLocation.lat, currentVolunteer.currentLocation.lng],
+        zoom: 14,
+        zoomControl: false,
+        attributionControl: false,
+        dragging: false,
+        scrollWheelZoom: false,
+        doubleClickZoom: false,
+        touchZoom: false
+      });
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19
+      }).addTo(map);
+
+      const marker = L.marker([currentVolunteer.currentLocation.lat, currentVolunteer.currentLocation.lng], {
+        icon: L.divIcon({
+          className: 'vol-mini-pin',
+          html: `<div style="width:28px;height:28px;background:#84CC16;border-radius:50%;border:3px solid #0F766E;box-shadow:0 0 12px #84CC1680;display:flex;align-items:center;justify-content:center;font-size:14px;">📍</div>`,
+          iconSize: [28, 28],
+          iconAnchor: [14, 14]
+        })
+      }).addTo(map);
+
+      miniMapInstanceRef.current = map;
+      miniMarkerRef.current = marker;
+    }
+    return () => {
+      if (miniMapInstanceRef.current) {
+        miniMapInstanceRef.current.remove();
+        miniMapInstanceRef.current = null;
+        miniMarkerRef.current = null;
+      }
+    };
+  }, []);
+
+  // Update mini-map when volunteer location changes
+  useEffect(() => {
+    if (miniMapInstanceRef.current && miniMarkerRef.current) {
+      const { lat, lng } = currentVolunteer.currentLocation;
+      miniMarkerRef.current.setLatLng([lat, lng]);
+      miniMapInstanceRef.current.setView([lat, lng], 14);
+    }
+  }, [currentVolunteer.currentLocation.lat, currentVolunteer.currentLocation.lng]);
 
   const unassignedRequests = requests.filter(r => 
     (r.status === 'requested' || r.status === 'pooled' || r.status === 'matched') && 
     r.requestType !== 'shelter_need' && 
     !r.assignedVolunteerId
   );
+
+  // Sort incoming requests by proximity (nearest first)
+  const sortedUnassignedRequests = [...unassignedRequests].sort((a, b) => {
+    const distA = haversineDistance(
+      currentVolunteer.currentLocation.lat, currentVolunteer.currentLocation.lng,
+      a.location.lat, a.location.lng
+    );
+    const distB = haversineDistance(
+      currentVolunteer.currentLocation.lat, currentVolunteer.currentLocation.lng,
+      b.location.lat, b.location.lng
+    );
+    return distA - distB;
+  });
+
+  // Helper to get distance for a request
+  const getDistanceKm = (req: DonationRequest): number => {
+    return Math.round(haversineDistance(
+      currentVolunteer.currentLocation.lat, currentVolunteer.currentLocation.lng,
+      req.location.lat, req.location.lng
+    ) * 10) / 10;
+  };
   
   const unmatchedShelterNeeds = requests.filter(r => r.status === 'needy_demand');
   const rawActiveMissions = requests.filter(r => 
@@ -187,6 +281,26 @@ export const VolunteerApp: React.FC = () => {
             </div>
           </div>
 
+          {/* Mini Location Map */}
+          <div className="rounded-2xl overflow-hidden border-2 border-teal-600/60 shadow-lg" style={{ height: '120px' }}>
+            <div ref={miniMapRef} className="w-full h-full" />
+          </div>
+          {geoStatus === 'locating' && (
+            <div className="bg-teal-950/80 p-2 rounded-xl border border-teal-600/60 text-center text-[11px] font-bold text-teal-300 animate-pulse">
+              📡 Detecting your live location...
+            </div>
+          )}
+          {geoStatus === 'success' && (
+            <div className="bg-teal-950/80 p-2 rounded-xl border border-[#84CC16]/40 text-center text-[10px] font-bold text-[#84CC16]">
+              📍 Live Location: {currentVolunteer.currentLocation.areaName} — {currentVolunteer.currentLocation.address.split(',').slice(0, 2).join(',')}
+            </div>
+          )}
+          {geoStatus === 'denied' && (
+            <div className="bg-amber-950/80 p-2 rounded-xl border border-amber-600/60 text-center text-[11px] font-bold text-amber-300">
+              ⚠️ Location access denied — distance calculations may be approximate
+            </div>
+          )}
+
           {/* Sub Nav Tabs */}
           <div className="grid grid-cols-4 gap-1 p-1 bg-teal-950/90 rounded-2xl border border-teal-700/60 text-center text-[11px] font-bold">
             <button
@@ -287,13 +401,13 @@ export const VolunteerApp: React.FC = () => {
             )}
 
             {/* Donor Food Offers Ready for Pickup */}
-            {unassignedRequests.length === 0 && unmatchedShelterNeeds.length === 0 ? (
+            {sortedUnassignedRequests.length === 0 && unmatchedShelterNeeds.length === 0 ? (
               <div className="bg-white p-8 rounded-3xl border border-teal-200 text-center space-y-2 shadow">
                 <p className="font-bold text-slate-800 text-sm">No Pending Orders Nearby</p>
                 <p className="text-xs text-slate-500">New donor requests will broadcast instant alert popups here.</p>
               </div>
             ) : (
-              unassignedRequests.map(req => (
+              sortedUnassignedRequests.map(req => (
                 <div key={req.id} className="bg-teal-950 text-white rounded-3xl p-5 border-2 border-teal-600 shadow-2xl space-y-4">
                   <div className="flex items-center justify-between border-b border-teal-800 pb-3">
                     <div>
@@ -313,6 +427,15 @@ export const VolunteerApp: React.FC = () => {
                       <span className="text-teal-200 block">Weight</span>
                       <span className="font-bold text-[#84CC16]">{req.quantityKg} kg (~{req.estimatedServings} meals)</span>
                     </div>
+                  </div>
+
+                  {/* Distance Badge */}
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2 bg-slate-900/80 px-3 py-1.5 rounded-xl border border-teal-700/60">
+                      <MapPin className="w-3.5 h-3.5 text-[#84CC16]" />
+                      <span className="text-xs font-extrabold text-[#84CC16]">{getDistanceKm(req)} km away</span>
+                    </div>
+                    <span className="text-[10px] text-teal-400 font-mono">{req.location.areaName}</span>
                   </div>
 
                   {req.matchedShelterName && (

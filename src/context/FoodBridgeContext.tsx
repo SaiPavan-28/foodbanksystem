@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { haversineDistance } from '../utils/geoUtils';
 import {
   DonationRequest,
   Volunteer,
@@ -47,6 +48,7 @@ interface FoodBridgeContextType {
   triggerSmallBatchPooling: () => void;
   routeToFallbackShelter: (requestId: string, shelterName: string) => void;
   completeTrainingModule: (moduleId: string) => void;
+  updateVolunteerLocation: (volunteerId: string, lat: number, lng: number, address: string, areaName: string) => void;
   simulateNewRequest: () => void;
   // Dual Points
   donorPoints: number;
@@ -581,12 +583,27 @@ export const FoodBridgeProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     setVolunteers(prev => prev.map(v => (v.id === volunteerId ? { ...v, status } : v)));
   };
 
+  const updateVolunteerLocation = (volunteerId: string, lat: number, lng: number, address: string, areaName: string) => {
+    setVolunteers(prev =>
+      prev.map(v =>
+        v.id === volunteerId
+          ? { ...v, currentLocation: { lat, lng, address, areaName } }
+          : v
+      )
+    );
+  };
+
   const calculateMatchingScores = (requestId: string): MatchingScore[] => {
     const req = requests.find(r => r.id === requestId);
     if (!req) return [];
 
     return volunteers.map(vol => {
-      const distanceScore = 90;
+      const distanceKm = haversineDistance(
+        vol.currentLocation.lat, vol.currentLocation.lng,
+        req.location.lat, req.location.lng
+      );
+      // Distance score: 100 for 0km, 0 for 20km+
+      const distanceScore = Math.max(0, Math.min(100, 100 - (distanceKm / 20) * 100));
       const capacityScore = vol.vehicleCapacityKg >= req.quantityKg ? 100 : 50;
       const availabilityScore = vol.status === 'available' ? 100 : 30;
       const certificationScore = 90;
@@ -605,10 +622,10 @@ export const FoodBridgeProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       return {
         volunteerId: vol.id,
         volunteerName: vol.name,
-        distanceKm: 1.8,
+        distanceKm: Math.round(distanceKm * 10) / 10,
         totalScore,
         breakdown: {
-          distanceScore: 90,
+          distanceScore: Math.round(distanceScore),
           capacityScore: Math.round(capacityScore),
           availabilityScore: Math.round(availabilityScore),
           certificationScore: 90,
@@ -703,6 +720,7 @@ export const FoodBridgeProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         assignVolunteerToRequest,
         toggleVolunteerStatus,
         calculateMatchingScores,
+        updateVolunteerLocation,
         triggerSmallBatchPooling,
         routeToFallbackShelter,
         completeTrainingModule,

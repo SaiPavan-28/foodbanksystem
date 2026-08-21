@@ -4,6 +4,7 @@ import { useFoodBridge } from '../context/FoodBridgeContext';
 import { FoodType, DonationRequest } from '../types/foodbridge';
 import { GoldenHourBadge } from '../components/GoldenHourBadge';
 import { LiveChatModal } from '../components/LiveChatModal';
+import { LocationPickerMap } from '../components/LocationPickerMap';
 import confetti from 'canvas-confetti';
 
 export const DonorPortal: React.FC = () => {
@@ -18,6 +19,8 @@ export const DonorPortal: React.FC = () => {
   const [estimatedServings, setEstimatedServings] = useState<number>(80);
   const [areaName, setAreaName] = useState('T. Nagar');
   const [address, setAddress] = useState('12 Pondy Bazaar, T. Nagar, Chennai');
+  const [locationLat, setLocationLat] = useState(13.0400);
+  const [locationLng, setLocationLng] = useState(80.2300);
   const [goldenHourHours, setGoldenHourHours] = useState<number>(3);
   const [photoUrl, setPhotoUrl] = useState('https://images.unsplash.com/photo-1555244162-803834f70033?w=600&auto=format&fit=crop&q=60');
   const [customPhotoFile, setCustomPhotoFile] = useState<string | null>(null);
@@ -45,12 +48,6 @@ export const DonorPortal: React.FC = () => {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const deadlineIso = new Date(Date.now() + goldenHourHours * 60 * 60 * 1000).toISOString();
-    
-    let lat = 13.0400;
-    let lng = 80.2300;
-    if (areaName === 'Velachery') { lat = 12.9800; lng = 80.2200; }
-    if (areaName === 'Guindy') { lat = 13.0300; lng = 80.2100; }
-    if (areaName === 'Mylapore') { lat = 13.0550; lng = 80.2500; }
 
     addDonationRequest({
       donorId: authUser?.id,
@@ -62,7 +59,7 @@ export const DonorPortal: React.FC = () => {
       photoUrl,
       cookedTimestamp: new Date().toISOString(),
       goldenHourDeadline: deadlineIso,
-      location: { lat, lng, address, areaName },
+      location: { lat: locationLat, lng: locationLng, address, areaName },
       notes
     });
 
@@ -278,32 +275,17 @@ export const DonorPortal: React.FC = () => {
                 )}
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 uppercase mb-1">Locality</label>
-                  <select
-                    value={areaName}
-                    onChange={e => setAreaName(e.target.value)}
-                    className="w-full px-4 py-2.5 rounded-xl border border-slate-300 text-sm font-medium bg-white"
-                  >
-                    <option value="T. Nagar">T. Nagar</option>
-                    <option value="Velachery">Velachery</option>
-                    <option value="Guindy">Guindy</option>
-                    <option value="Mylapore">Mylapore</option>
-                  </select>
-                </div>
-
-                <div className="sm:col-span-2">
-                  <label className="block text-xs font-bold text-slate-700 uppercase mb-1">Full Address</label>
-                  <input
-                    type="text"
-                    required
-                    value={address}
-                    onChange={e => setAddress(e.target.value)}
-                    className="w-full px-4 py-2.5 rounded-xl border border-slate-300 text-sm font-medium"
-                  />
-                </div>
-              </div>
+              <LocationPickerMap
+                value={{ lat: locationLat, lng: locationLng, address, areaName }}
+                onChange={(loc) => {
+                  setLocationLat(loc.lat);
+                  setLocationLng(loc.lng);
+                  setAddress(loc.address);
+                  setAreaName(loc.areaName);
+                }}
+                height={300}
+                accentColor="emerald"
+              />
 
               <button
                 type="submit"
