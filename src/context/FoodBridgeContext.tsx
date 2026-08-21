@@ -49,6 +49,7 @@ interface FoodBridgeContextType {
   routeToFallbackShelter: (requestId: string, shelterName: string) => void;
   completeTrainingModule: (moduleId: string) => void;
   updateVolunteerLocation: (volunteerId: string, lat: number, lng: number, address: string, areaName: string) => void;
+  updateVolunteerRadius: (volunteerId: string, radiusKm: number) => void;
   simulateNewRequest: () => void;
   // Dual Points
   donorPoints: number;
@@ -264,12 +265,17 @@ export const FoodBridgeProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       vehicleType: foundUser.vehicleType,
       points: foundUser.points || (foundUser.role === 'donor' ? 100 : 50),
       tier: foundUser.tier || 'Bronze Donor',
-      quizPassed: foundUser.quizPassed
+      quizPassed: foundUser.quizPassed,
+      location: foundUser.location,
+      serviceRadiusKm: foundUser.serviceRadiusKm || 10
     };
 
     if (foundUser.role === 'volunteer') {
+      const userLoc = foundUser.location || { lat: 13.0400, lng: 80.2300, address: 'T. Nagar, Chennai', areaName: 'T. Nagar' };
       setVolunteers(prev => {
-        if (prev.some(v => v.id === foundUser.id)) return prev;
+        if (prev.some(v => v.id === foundUser.id)) {
+          return prev.map(v => v.id === foundUser.id ? { ...v, currentLocation: userLoc, serviceRadiusKm: foundUser.serviceRadiusKm || v.serviceRadiusKm || 10 } : v);
+        }
         const newVolProfile: Volunteer = {
           id: foundUser.id,
           name: foundUser.name,
@@ -278,13 +284,14 @@ export const FoodBridgeProvider: React.FC<{ children: React.ReactNode }> = ({ ch
           certificationLevel: 'Level-1 Verified Rescue Volunteer',
           vehicleType: (foundUser.vehicleType as any) || 'Two Wheeler (Bike)',
           vehicleCapacityKg: 25,
-          currentLocation: { lat: 13.0400, lng: 80.2300, address: 'T. Nagar, Chennai', areaName: 'T. Nagar' },
+          currentLocation: userLoc,
           rating: 5.0,
           totalRescues: 0,
           volunteerPoints: foundUser.points || 50,
           foodSafetyBadges: ['Food Hygiene Certified', 'Golden Hour Qualified'],
           quizPassed: true,
-          quizScore: 100
+          quizScore: 100,
+          serviceRadiusKm: foundUser.serviceRadiusKm || 10
         };
         return [newVolProfile, ...prev];
       });
@@ -325,10 +332,13 @@ export const FoodBridgeProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       vehicleType: created.vehicleType,
       points: created.points,
       tier: created.tier,
-      quizPassed: created.quizPassed
+      quizPassed: created.quizPassed,
+      location: created.location,
+      serviceRadiusKm: created.serviceRadiusKm || 10
     };
 
     if (created.role === 'volunteer') {
+      const userLoc = created.location || { lat: 13.0400, lng: 80.2300, address: 'T. Nagar, Chennai', areaName: 'T. Nagar' };
       setVolunteers(prev => {
         if (prev.some(v => v.id === created.id)) return prev;
         const newVolProfile: Volunteer = {
@@ -339,13 +349,14 @@ export const FoodBridgeProvider: React.FC<{ children: React.ReactNode }> = ({ ch
           certificationLevel: 'Level-1 Verified Rescue Volunteer',
           vehicleType: (created.vehicleType as any) || 'Two Wheeler (Bike)',
           vehicleCapacityKg: 25,
-          currentLocation: { lat: 13.0400, lng: 80.2300, address: 'T. Nagar, Chennai', areaName: 'T. Nagar' },
+          currentLocation: userLoc,
           rating: 5.0,
           totalRescues: 0,
           volunteerPoints: created.points || 50,
           foodSafetyBadges: ['Food Hygiene Certified', 'Golden Hour Qualified'],
           quizPassed: true,
-          quizScore: 100
+          quizScore: 100,
+          serviceRadiusKm: created.serviceRadiusKm || 10
         };
         return [newVolProfile, ...prev];
       });
@@ -584,11 +595,48 @@ export const FoodBridgeProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   };
 
   const updateVolunteerLocation = (volunteerId: string, lat: number, lng: number, address: string, areaName: string) => {
+    const newLoc = { lat, lng, address, areaName };
     setVolunteers(prev =>
       prev.map(v =>
         v.id === volunteerId
-          ? { ...v, currentLocation: { lat, lng, address, areaName } }
+          ? { ...v, currentLocation: newLoc }
           : v
+      )
+    );
+
+    // Persist to authUser if current user is this volunteer
+    if (authUser && (authUser.id === volunteerId || authUser.name === volunteerId)) {
+      setAuthUser(prev => prev ? { ...prev, location: newLoc } : null);
+    }
+
+    // Persist to registeredUsers
+    setRegisteredUsers(prev =>
+      prev.map(u =>
+        u.id === volunteerId
+          ? { ...u, location: newLoc }
+          : u
+      )
+    );
+  };
+
+  const updateVolunteerRadius = (volunteerId: string, radiusKm: number) => {
+    setVolunteers(prev =>
+      prev.map(v =>
+        v.id === volunteerId
+          ? { ...v, serviceRadiusKm: radiusKm }
+          : v
+      )
+    );
+
+    if (authUser && (authUser.id === volunteerId || authUser.name === volunteerId)) {
+      setAuthUser(prev => prev ? { ...prev, serviceRadiusKm: radiusKm } : null);
+    }
+
+    setRegisteredUsers(prev =>
+      prev.map(u =>
+        u.id === volunteerId
+          ? { ...u, serviceRadiusKm: radiusKm }
+          : u
       )
     );
   };
@@ -721,6 +769,7 @@ export const FoodBridgeProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         toggleVolunteerStatus,
         calculateMatchingScores,
         updateVolunteerLocation,
+        updateVolunteerRadius,
         triggerSmallBatchPooling,
         routeToFallbackShelter,
         completeTrainingModule,

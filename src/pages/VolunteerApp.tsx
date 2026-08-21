@@ -1,19 +1,21 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Navigation, CheckSquare, ShieldCheck, Camera, MapPin, Award, CheckCircle2, ChevronRight, Upload, AlertCircle, MessageSquare, Star, Zap, PackageCheck } from 'lucide-react';
+import { Navigation, CheckSquare, ShieldCheck, Camera, MapPin, Award, CheckCircle2, ChevronRight, Upload, AlertCircle, MessageSquare, Star, Zap, PackageCheck, Edit3, Sliders, X } from 'lucide-react';
 import L from 'leaflet';
 import { useFoodBridge } from '../context/FoodBridgeContext';
 import { VolunteerStatus, DonationRequest } from '../types/foodbridge';
 import { GoldenHourBadge } from '../components/GoldenHourBadge';
 import { VolunteerQuizModal } from '../components/VolunteerQuizModal';
 import { LiveChatModal } from '../components/LiveChatModal';
+import { LocationPickerMap } from '../components/LocationPickerMap';
 import { haversineDistance, getBrowserLocation, reverseGeocode } from '../utils/geoUtils';
 import confetti from 'canvas-confetti';
 
 export const VolunteerApp: React.FC = () => {
-  const { authUser, volunteers, requests, updateRequestStatus, assignVolunteerToRequest, toggleVolunteerStatus, trainingModules, completeTrainingModule, volunteerPoints, updateVolunteerLocation } = useFoodBridge();
+  const { authUser, volunteers, requests, updateRequestStatus, assignVolunteerToRequest, toggleVolunteerStatus, trainingModules, completeTrainingModule, volunteerPoints, updateVolunteerLocation, updateVolunteerRadius } = useFoodBridge();
   const [activeTab, setActiveTab] = useState<'tasks' | 'incoming' | 'completed' | 'training' | 'profile'>('incoming');
   const [showQuizModal, setShowQuizModal] = useState<boolean>(false);
   const [activeChatRequest, setActiveChatRequest] = useState<DonationRequest | null>(null);
+  const [showLocationModal, setShowLocationModal] = useState<boolean>(false);
 
   const currentVolunteer = volunteers.find(v => v.id === authUser?.id || v.name === authUser?.name) || {
     id: authUser?.id || 'vol-1',
@@ -23,13 +25,14 @@ export const VolunteerApp: React.FC = () => {
     certificationLevel: 'Level-1 Verified Rescue Volunteer',
     vehicleType: (authUser?.vehicleType as any) || 'Two Wheeler (Bike)',
     vehicleCapacityKg: 25,
-    currentLocation: { lat: 13.0400, lng: 80.2300, address: 'T. Nagar, Chennai', areaName: 'T. Nagar' },
+    currentLocation: authUser?.location || { lat: 13.0400, lng: 80.2300, address: 'T. Nagar, Chennai', areaName: 'T. Nagar' },
     rating: 5.0,
     totalRescues: 0,
     volunteerPoints: authUser?.points || volunteerPoints || 50,
     foodSafetyBadges: ['Food Hygiene Certified', 'Golden Hour Qualified'],
     quizPassed: true,
-    quizScore: 100
+    quizScore: 100,
+    serviceRadiusKm: authUser?.serviceRadiusKm || 10
   };
 
   const getInitials = (name: string) => {
@@ -53,6 +56,17 @@ export const VolunteerApp: React.FC = () => {
   const [deliveryPhotoFile, setDeliveryPhotoFile] = useState<string | null>(null);
   const [recipientName, setRecipientName] = useState('Anitha (Koyambedu Shelter)');
   const [geoStatus, setGeoStatus] = useState<'idle' | 'locating' | 'success' | 'denied'>('idle');
+
+  const [selectedRadiusKm, setSelectedRadiusKm] = useState<number>(currentVolunteer.serviceRadiusKm || 10);
+  const [tempEditLocation, setTempEditLocation] = useState(currentVolunteer.currentLocation);
+
+  // Keep tempEditLocation updated if volunteer updates
+  useEffect(() => {
+    setTempEditLocation(currentVolunteer.currentLocation);
+    if (currentVolunteer.serviceRadiusKm) {
+      setSelectedRadiusKm(currentVolunteer.serviceRadiusKm);
+    }
+  }, [currentVolunteer.currentLocation.lat, currentVolunteer.currentLocation.lng, currentVolunteer.serviceRadiusKm]);
 
   // Mini-map refs
   const miniMapRef = useRef<HTMLDivElement>(null);
@@ -149,6 +163,32 @@ export const VolunteerApp: React.FC = () => {
       currentVolunteer.currentLocation.lat, currentVolunteer.currentLocation.lng,
       req.location.lat, req.location.lng
     ) * 10) / 10;
+  };
+
+  // Filter requests strictly within the volunteer's selected radius
+  const withinRadiusRequests = sortedUnassignedRequests.filter(req => {
+    if (selectedRadiusKm >= 999) return true;
+    return getDistanceKm(req) <= selectedRadiusKm;
+  });
+
+  const outsideRadiusCount = sortedUnassignedRequests.length - withinRadiusRequests.length;
+
+  const handleSaveRelocation = () => {
+    updateVolunteerLocation(
+      currentVolunteer.id,
+      tempEditLocation.lat,
+      tempEditLocation.lng,
+      tempEditLocation.address,
+      tempEditLocation.areaName
+    );
+    updateVolunteerRadius(currentVolunteer.id, selectedRadiusKm);
+    setShowLocationModal(false);
+    confetti({ particleCount: 70, spread: 60, origin: { y: 0.6 } });
+  };
+
+  const handleRadiusChange = (radius: number) => {
+    setSelectedRadiusKm(radius);
+    updateVolunteerRadius(currentVolunteer.id, radius);
   };
   
   const unmatchedShelterNeeds = requests.filter(r => r.status === 'needy_demand');
@@ -281,25 +321,45 @@ export const VolunteerApp: React.FC = () => {
             </div>
           </div>
 
-          {/* Mini Location Map */}
-          <div className="rounded-2xl overflow-hidden border-2 border-teal-600/60 shadow-lg" style={{ height: '120px' }}>
-            <div ref={miniMapRef} className="w-full h-full" />
+          {/* Mini Location Map & Location Control */}
+          <div className="space-y-2">
+            <div className="rounded-2xl overflow-hidden border-2 border-teal-600/60 shadow-lg relative" style={{ height: '120px' }}>
+              <div ref={miniMapRef} className="w-full h-full" />
+              <button
+                onClick={() => {
+                  setTempEditLocation(currentVolunteer.currentLocation);
+                  setShowLocationModal(true);
+                }}
+                className="absolute top-2.5 right-2.5 z-[500] px-3 py-1.5 bg-slate-900/90 hover:bg-slate-900 text-[#84CC16] border border-[#84CC16]/60 text-xs font-black rounded-xl shadow-lg flex items-center gap-1.5 transition-all backdrop-blur-sm"
+              >
+                <Edit3 className="w-3.5 h-3.5" />
+                <span>Relocate / Edit Location</span>
+              </button>
+            </div>
+
+            <div className="bg-teal-950/90 p-2.5 rounded-xl border border-teal-600/60 flex items-center justify-between gap-2 text-xs">
+              <div className="flex items-center gap-2 overflow-hidden">
+                <MapPin className="w-4 h-4 text-[#84CC16] shrink-0" />
+                <div className="truncate">
+                  <span className="font-extrabold text-white text-xs block truncate">
+                    {currentVolunteer.currentLocation.areaName}
+                  </span>
+                  <span className="text-[10px] text-teal-200 block truncate">
+                    {currentVolunteer.currentLocation.address}
+                  </span>
+                </div>
+              </div>
+              <button
+                onClick={() => {
+                  setTempEditLocation(currentVolunteer.currentLocation);
+                  setShowLocationModal(true);
+                }}
+                className="text-[11px] font-extrabold text-[#84CC16] hover:underline shrink-0 pl-1"
+              >
+                Edit ✏️
+              </button>
+            </div>
           </div>
-          {geoStatus === 'locating' && (
-            <div className="bg-teal-950/80 p-2 rounded-xl border border-teal-600/60 text-center text-[11px] font-bold text-teal-300 animate-pulse">
-              📡 Detecting your live location...
-            </div>
-          )}
-          {geoStatus === 'success' && (
-            <div className="bg-teal-950/80 p-2 rounded-xl border border-[#84CC16]/40 text-center text-[10px] font-bold text-[#84CC16]">
-              📍 Live Location: {currentVolunteer.currentLocation.areaName} — {currentVolunteer.currentLocation.address.split(',').slice(0, 2).join(',')}
-            </div>
-          )}
-          {geoStatus === 'denied' && (
-            <div className="bg-amber-950/80 p-2 rounded-xl border border-amber-600/60 text-center text-[11px] font-bold text-amber-300">
-              ⚠️ Location access denied — distance calculations may be approximate
-            </div>
-          )}
 
           {/* Sub Nav Tabs */}
           <div className="grid grid-cols-4 gap-1 p-1 bg-teal-950/90 rounded-2xl border border-teal-700/60 text-center text-[11px] font-bold">
@@ -337,10 +397,54 @@ export const VolunteerApp: React.FC = () => {
         {/* Tab 1: Incoming Feed */}
         {activeTab === 'incoming' && (
           <div className="space-y-4">
+            
+            {/* Live Range & Proximity Filter Bar */}
+            <div className="bg-white p-4 rounded-3xl border border-teal-200 shadow-md space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Sliders className="w-4 h-4 text-teal-600" />
+                  <span className="font-extrabold text-xs text-slate-800">
+                    Rescue Range: <b className="text-teal-700">{selectedRadiusKm >= 999 ? 'Entire City (No Limit)' : `Within ${selectedRadiusKm} km`}</b>
+                  </span>
+                </div>
+                <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 bg-teal-50 text-teal-800 rounded-full border border-teal-200">
+                  {withinRadiusRequests.length} in range
+                </span>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-1.5">
+                {[3, 5, 10, 15, 25, 50, 999].map(r => (
+                  <button
+                    key={r}
+                    onClick={() => handleRadiusChange(r)}
+                    className={`px-3 py-1 rounded-xl text-xs font-black transition-all ${
+                      selectedRadiusKm === r
+                        ? 'bg-[#0D9488] text-white shadow-md scale-105'
+                        : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                    }`}
+                  >
+                    {r === 999 ? 'City-wide' : `${r} km`}
+                  </button>
+                ))}
+              </div>
+
+              {outsideRadiusCount > 0 && (
+                <div className="p-2 bg-amber-50 rounded-xl border border-amber-200 text-[11px] text-amber-900 flex items-center justify-between">
+                  <span>⚠️ <b>{outsideRadiusCount}</b> order(s) available further than {selectedRadiusKm} km</span>
+                  <button
+                    onClick={() => handleRadiusChange(50)}
+                    className="font-black text-amber-800 underline hover:text-amber-950 ml-2 whitespace-nowrap"
+                  >
+                    Expand Range →
+                  </button>
+                </div>
+              )}
+            </div>
+
             <div className="flex items-center justify-between">
               <h3 className="font-extrabold text-slate-900 text-base flex items-center gap-2">
                 <Zap className="w-5 h-5 text-amber-500" />
-                Nearby Rescue Orders (Swiggy Feed)
+                Nearby Rescue Orders (Live Proximity)
               </h3>
               <span className="text-[10px] text-teal-700 font-bold uppercase">Real-time Feed</span>
             </div>
@@ -400,14 +504,27 @@ export const VolunteerApp: React.FC = () => {
               </div>
             )}
 
-            {/* Donor Food Offers Ready for Pickup */}
-            {sortedUnassignedRequests.length === 0 && unmatchedShelterNeeds.length === 0 ? (
-              <div className="bg-white p-8 rounded-3xl border border-teal-200 text-center space-y-2 shadow">
-                <p className="font-bold text-slate-800 text-sm">No Pending Orders Nearby</p>
-                <p className="text-xs text-slate-500">New donor requests will broadcast instant alert popups here.</p>
+            {/* Donor Food Offers Ready for Pickup (Filtered by Radius) */}
+            {withinRadiusRequests.length === 0 && unmatchedShelterNeeds.length === 0 ? (
+              <div className="bg-white p-8 rounded-3xl border border-teal-200 text-center space-y-3 shadow">
+                <MapPin className="w-10 h-10 text-teal-600 mx-auto" />
+                <p className="font-bold text-slate-800 text-sm">No Pending Orders Within {selectedRadiusKm >= 999 ? 'City' : `${selectedRadiusKm} km`}</p>
+                <p className="text-xs text-slate-500">
+                  {outsideRadiusCount > 0
+                    ? `There are ${outsideRadiusCount} orders further away. Expand your search radius or relocate to view them.`
+                    : 'New donor requests in your vicinity will broadcast instant alert popups here.'}
+                </p>
+                {outsideRadiusCount > 0 && (
+                  <button
+                    onClick={() => handleRadiusChange(50)}
+                    className="px-4 py-2 bg-[#0D9488] text-white font-bold text-xs rounded-xl shadow"
+                  >
+                    View All Orders ({sortedUnassignedRequests.length})
+                  </button>
+                )}
               </div>
             ) : (
-              sortedUnassignedRequests.map(req => (
+              withinRadiusRequests.map(req => (
                 <div key={req.id} className="bg-teal-950 text-white rounded-3xl p-5 border-2 border-teal-600 shadow-2xl space-y-4">
                   <div className="flex items-center justify-between border-b border-teal-800 pb-3">
                     <div>
@@ -666,6 +783,88 @@ export const VolunteerApp: React.FC = () => {
 
       {showQuizModal && (
         <VolunteerQuizModal onClose={() => setShowQuizModal(false)} onSuccess={() => {}} />
+      )}
+
+      {/* Relocate / Edit Base Location Modal */}
+      {showLocationModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 backdrop-blur-sm p-4">
+          <div className="bg-white border border-teal-200 rounded-3xl max-w-lg w-full p-6 sm:p-8 shadow-2xl space-y-5 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <div className="flex items-center gap-2.5">
+                <div className="p-2.5 bg-teal-100 text-teal-800 rounded-xl">
+                  <MapPin className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-extrabold text-lg text-slate-900">Relocate / Edit Base Location</h3>
+                  <p className="text-xs text-slate-500">Update your operating location when moving or transferred</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowLocationModal(false)}
+                className="text-slate-400 hover:text-slate-700 p-1.5 rounded-xl hover:bg-slate-100 transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              <LocationPickerMap
+                value={tempEditLocation}
+                onChange={setTempEditLocation}
+                height={260}
+                accentColor="teal"
+              />
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 uppercase mb-1.5">
+                  Rescue Alert Radius
+                </label>
+                <div className="grid grid-cols-5 gap-1.5">
+                  {[5, 10, 15, 25, 50].map(r => (
+                    <button
+                      key={r}
+                      type="button"
+                      onClick={() => setSelectedRadiusKm(r)}
+                      className={`py-2 rounded-xl text-xs font-extrabold transition-all ${
+                        selectedRadiusKm === r
+                          ? 'bg-[#0D9488] text-white shadow'
+                          : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                      }`}
+                    >
+                      {r} km
+                    </button>
+                  ))}
+                </div>
+                <p className="text-[10px] text-slate-500 mt-1">
+                  You will receive instant alerts for donor surplus orders within this radius.
+                </p>
+              </div>
+
+              <div className="p-3 bg-teal-50 border border-teal-200 rounded-2xl text-xs text-teal-900">
+                <span className="font-bold block">Selected Base Address:</span>
+                <span className="font-extrabold text-slate-800">{tempEditLocation.areaName}</span>
+                <p className="text-[11px] text-slate-600 truncate">{tempEditLocation.address}</p>
+              </div>
+
+              <div className="flex gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setShowLocationModal(false)}
+                  className="flex-1 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl transition-all"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={handleSaveRelocation}
+                  className="flex-1 py-3 bg-gradient-to-r from-teal-600 to-emerald-600 hover:from-teal-500 hover:to-emerald-500 text-white font-extrabold text-xs rounded-xl shadow-lg transition-all"
+                >
+                  Save & Update Location
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

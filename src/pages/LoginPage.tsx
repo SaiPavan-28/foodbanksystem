@@ -3,6 +3,7 @@ import { Utensils, Shield, Users, Lock, Mail, ArrowRight, Award, ArrowLeft, User
 import { useFoodBridge } from '../context/FoodBridgeContext';
 import { UserRole } from '../types/foodbridge';
 import { VolunteerQuizModal } from '../components/VolunteerQuizModal';
+import { LocationPickerMap } from '../components/LocationPickerMap';
 
 export const LoginPage: React.FC = () => {
   const { login, registerUser, setCurrentRole, targetLoginRole, passVolunteerQuiz } = useFoodBridge();
@@ -22,7 +23,13 @@ export const LoginPage: React.FC = () => {
   const [regPassword, setRegPassword] = useState('');
   const [regEstablishment, setRegEstablishment] = useState('');
   const [regVehicleType, setRegVehicleType] = useState('Two Wheeler (Bike)');
-  const [regAreaName, setRegAreaName] = useState('T. Nagar');
+  const [regLocation, setRegLocation] = useState({
+    lat: 13.0400,
+    lng: 80.2300,
+    address: 'T. Nagar, Chennai',
+    areaName: 'T. Nagar'
+  });
+  const [regServiceRadius, setRegServiceRadius] = useState<number>(10);
 
   // Modal & Error State
   const [authError, setAuthError] = useState<string | null>(null);
@@ -95,7 +102,9 @@ export const LoginPage: React.FC = () => {
       role: 'volunteer',
       phone: regPhone,
       vehicleType: regVehicleType,
-      quizPassed: true
+      quizPassed: true,
+      location: regLocation,
+      serviceRadiusKm: regServiceRadius
     });
 
     if (!res.success && res.error) {
@@ -331,32 +340,50 @@ export const LoginPage: React.FC = () => {
               )}
 
               {selectedRole === 'volunteer' && (
-                <div className="grid grid-cols-2 gap-2">
-                  <div>
-                    <label className="block text-xs font-bold text-slate-700 uppercase mb-1">Vehicle Type</label>
-                    <select
-                      value={regVehicleType}
-                      onChange={e => setRegVehicleType(e.target.value)}
-                      className="w-full px-3 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-semibold"
-                    >
-                      <option value="Two Wheeler (Bike)">Two Wheeler (Bike)</option>
-                      <option value="Three Wheeler (Auto)">Three Wheeler (Auto)</option>
-                      <option value="Four Wheeler (Van)">Four Wheeler (Van)</option>
-                    </select>
+                <div className="space-y-3">
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 uppercase mb-1">Vehicle Type</label>
+                      <select
+                        value={regVehicleType}
+                        onChange={e => setRegVehicleType(e.target.value)}
+                        className="w-full px-3 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-semibold"
+                      >
+                        <option value="Two Wheeler (Bike)">Two Wheeler (Bike)</option>
+                        <option value="Three Wheeler (Auto)">Three Wheeler (Auto)</option>
+                        <option value="Four Wheeler (Van)">Four Wheeler (Van)</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 uppercase mb-1">Rescue Alert Radius</label>
+                      <select
+                        value={regServiceRadius}
+                        onChange={e => setRegServiceRadius(Number(e.target.value))}
+                        className="w-full px-3 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-semibold"
+                      >
+                        <option value={5}>Within 5 km</option>
+                        <option value={10}>Within 10 km (Standard)</option>
+                        <option value={15}>Within 15 km</option>
+                        <option value={25}>Within 25 km (Wide)</option>
+                        <option value={50}>Within 50 km (City-wide)</option>
+                      </select>
+                    </div>
                   </div>
 
                   <div>
-                    <label className="block text-xs font-bold text-slate-700 uppercase mb-1">Preferred Locality</label>
-                    <select
-                      value={regAreaName}
-                      onChange={e => setRegAreaName(e.target.value)}
-                      className="w-full px-3 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-semibold"
-                    >
-                      <option value="T. Nagar">T. Nagar</option>
-                      <option value="Velachery">Velachery</option>
-                      <option value="Guindy">Guindy</option>
-                      <option value="Mylapore">Mylapore</option>
-                    </select>
+                    <label className="block text-xs font-bold text-slate-700 uppercase mb-1">
+                      Volunteer Base Location (Live Map / GPS / Search)
+                    </label>
+                    <p className="text-[11px] text-slate-500 mb-2">
+                      Set your starting location. You'll receive live rescue requests within your selected {regServiceRadius} km radius. (You can edit this later anytime if you relocate!)
+                    </p>
+                    <LocationPickerMap
+                      value={regLocation}
+                      onChange={setRegLocation}
+                      height={200}
+                      accentColor="teal"
+                    />
                   </div>
                 </div>
               )}

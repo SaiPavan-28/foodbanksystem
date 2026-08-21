@@ -19,6 +19,8 @@ export interface AuthUser {
   points?: number;
   tier?: 'Bronze Donor' | 'Silver Rescuer' | 'Gold Champion' | 'Platinum Hero';
   quizPassed?: boolean;
+  location?: Location;
+  serviceRadiusKm?: number;
 }
 
 export interface RegisteredUser {
@@ -33,6 +35,8 @@ export interface RegisteredUser {
   points?: number;
   tier?: 'Bronze Donor' | 'Silver Rescuer' | 'Gold Champion' | 'Platinum Hero';
   quizPassed?: boolean;
+  location?: Location;
+  serviceRadiusKm?: number;
 }
 
 export interface ChatMessage {
@@ -117,6 +121,7 @@ export interface Volunteer {
   currentAssignedRequestId?: string;
   quizPassed: boolean;
   quizScore?: number;
+  serviceRadiusKm?: number;
 }
 
 export interface Vehicle {
