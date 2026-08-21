@@ -612,6 +612,20 @@ export const FoodBridgeProvider: React.FC<{ children: React.ReactNode }> = ({ ch
 
   const assignVolunteerToRequest = (requestId: string, volunteerId: string) => {
     const vol = volunteers.find(v => v.id === volunteerId || v.name === volunteerId) || (authUser?.id === volunteerId ? authUser : null);
+
+    // Strict 1-Volunteer = 1-Active-Order Rule
+    const hasActiveMission = requests.some(
+      r => (r.assignedVolunteerId === volunteerId || (authUser?.id && r.assignedVolunteerId === authUser.id)) &&
+           r.status !== 'delivered' &&
+           r.id !== requestId &&
+           r.matchedDonorRequestId !== requestId
+    );
+
+    if (hasActiveMission) {
+      alert("⚠️ A volunteer can only carry and deliver ONE rescue order at a time! Please complete your current active mission and confirm delivery first.");
+      return;
+    }
+
     setRequests(prev => {
       const target = prev.find(r => r.id === requestId);
       if (!target) return prev;
