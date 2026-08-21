@@ -275,133 +275,129 @@ export const VolunteerApp: React.FC = () => {
   return (
     <div className="min-h-screen bg-[#F0FDFA] text-slate-900 pb-20 selection:bg-teal-500 selection:text-white">
       
-      {/* Header Banner - Deep Teal & Electric Lime */}
-      <div className="bg-gradient-to-r from-[#0F766E] via-[#0D9488] to-[#115E59] text-white p-6 shadow-xl sticky top-16 z-30">
-        <div className="max-w-md mx-auto space-y-4">
+      {/* Header Banner - Deep Teal & Electric Lime (Full Widescreen 2-Column Parallel Layout) */}
+      <div className="bg-gradient-to-r from-[#0F766E] via-[#0D9488] to-[#115E59] text-white py-6 sm:py-7 px-6 sm:px-10 lg:px-12 shadow-xl sticky top-16 z-30">
+        <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-center">
           
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-2xl bg-teal-950 border-2 border-[#84CC16] flex items-center justify-center font-bold text-lg text-[#84CC16] shadow-md">
-                {volunteerInitials}
-              </div>
-              <div>
-                <h1 className="font-extrabold text-lg tracking-tight text-white">{currentVolunteer.name}</h1>
-                <div className="flex items-center gap-1.5 text-xs text-teal-200">
-                  <Award className="w-3.5 h-3.5 text-[#84CC16]" />
-                  <span>{currentVolunteer.certificationLevel}</span>
+          {/* Left Column (lg:col-span-7): Profile, Points, Status & Nav Tabs */}
+          <div className="lg:col-span-7 space-y-4">
+            <div className="flex flex-wrap items-center justify-between gap-4">
+              <div className="flex items-center gap-3.5">
+                <div className="w-13 h-13 rounded-2xl bg-teal-950 border-2 border-[#84CC16] flex items-center justify-center font-black text-lg text-[#84CC16] shadow-md shrink-0 p-2.5">
+                  {volunteerInitials}
+                </div>
+                <div>
+                  <div className="flex items-center gap-2.5">
+                    <h1 className="font-black text-lg sm:text-xl tracking-tight text-white">{currentVolunteer.name}</h1>
+                    <span className="bg-teal-950 text-[#84CC16] font-mono font-black text-xs px-3 py-1 rounded-full border border-[#84CC16]/60 shadow-sm">
+                      {volunteerPoints} pts
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-1.5 text-xs text-teal-200 mt-0.5">
+                    <Award className="w-4 h-4 text-[#84CC16]" />
+                    <span className="font-semibold">{currentVolunteer.certificationLevel}</span>
+                  </div>
                 </div>
               </div>
+
+              {/* Status Toggle */}
+              <div className="bg-teal-950/90 px-3 py-1.5 rounded-2xl border border-teal-600/70 flex items-center gap-1.5 shadow-sm">
+                <span className="text-xs font-bold text-teal-300 pl-1">Status:</span>
+                {(['available', 'busy', 'offline'] as VolunteerStatus[]).map(status => (
+                  <button
+                    key={status}
+                    onClick={() => toggleVolunteerStatus(currentVolunteer.id, status)}
+                    className={`px-3 py-1 rounded-xl text-xs font-black capitalize transition-all ${
+                      currentVolunteer.status === status
+                        ? status === 'available'
+                          ? 'bg-[#84CC16] text-slate-950 shadow scale-105 font-black'
+                          : status === 'busy'
+                          ? 'bg-amber-500 text-slate-950 font-black'
+                          : 'bg-slate-700 text-white font-bold'
+                        : 'text-teal-300 hover:text-white'
+                    }`}
+                  >
+                    {status}
+                  </button>
+                ))}
+              </div>
             </div>
 
-            <div className="text-right">
-              <div className="text-xl font-black text-[#84CC16] font-mono">{volunteerPoints} pts</div>
-              <div className="text-[10px] text-teal-200 uppercase font-bold tracking-wider">Volunteer Reward Points</div>
+            {/* Sub Nav Tabs */}
+            <div className="grid grid-cols-4 gap-2 p-1.5 bg-teal-950/90 rounded-2xl border border-teal-700/70 text-center text-xs font-bold shadow-inner">
+              <button
+                onClick={() => setActiveTab('incoming')}
+                className={`py-2 rounded-xl transition-all ${activeTab === 'incoming' ? 'bg-[#84CC16] text-slate-950 shadow font-black' : 'text-teal-300 hover:text-white'}`}
+              >
+                Incoming ({unassignedRequests.length})
+              </button>
+              <button
+                onClick={() => setActiveTab('tasks')}
+                className={`py-2 rounded-xl transition-all ${activeTab === 'tasks' ? 'bg-[#0D9488] text-white shadow font-black' : 'text-teal-300 hover:text-white'}`}
+              >
+                Active ({activeMissions.length})
+              </button>
+              <button
+                onClick={() => setActiveTab('completed')}
+                className={`py-2 rounded-xl transition-all ${activeTab === 'completed' ? 'bg-[#0D9488] text-white shadow font-black' : 'text-teal-300 hover:text-white'}`}
+              >
+                Completed ({completedMissions.length})
+              </button>
+              <button
+                onClick={() => setActiveTab('training')}
+                className={`py-2 rounded-xl transition-all ${activeTab === 'training' ? 'bg-[#0D9488] text-white shadow font-black' : 'text-teal-300 hover:text-white'}`}
+              >
+                Training
+              </button>
             </div>
           </div>
 
-          {/* Availability Status Toggle */}
-          <div className="bg-teal-950/80 p-2 rounded-2xl border border-teal-600/60 flex items-center justify-between gap-2">
-            <span className="text-xs font-bold text-teal-200 pl-2">Field Status:</span>
-            <div className="flex items-center gap-1">
-              {(['available', 'busy', 'offline'] as VolunteerStatus[]).map(status => (
-                <button
-                  key={status}
-                  onClick={() => toggleVolunteerStatus(currentVolunteer.id, status)}
-                  className={`px-3 py-1 rounded-xl text-xs font-extrabold capitalize transition-all ${
-                    currentVolunteer.status === status
-                      ? status === 'available'
-                        ? 'bg-[#84CC16] text-slate-950 shadow scale-105 font-black'
-                        : status === 'busy'
-                        ? 'bg-amber-500 text-slate-950'
-                        : 'bg-slate-700 text-white'
-                      : 'text-teal-300 hover:text-white'
-                  }`}
-                >
-                  {status}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Mini Location Map & Location Control */}
-          <div className="space-y-2">
-            <div className="rounded-2xl overflow-hidden border-2 border-teal-600/60 shadow-lg relative" style={{ height: '120px' }}>
+          {/* Right Column (lg:col-span-5): Parallel Mini Map & Location Control */}
+          <div className="lg:col-span-5 bg-teal-950/90 rounded-3xl p-4 sm:p-5 border-2 border-teal-600/70 shadow-xl flex flex-col sm:flex-row items-center gap-4">
+            <div className="w-full sm:w-40 h-28 rounded-2xl overflow-hidden border border-teal-500/70 shadow-inner relative shrink-0">
               <div ref={miniMapRef} className="w-full h-full" />
-              <button
-                onClick={() => {
-                  setTempEditLocation(currentVolunteer.currentLocation);
-                  setShowLocationModal(true);
-                }}
-                className="absolute top-2.5 right-2.5 z-[500] px-3 py-1.5 bg-slate-900/90 hover:bg-slate-900 text-[#84CC16] border border-[#84CC16]/60 text-xs font-black rounded-xl shadow-lg flex items-center gap-1.5 transition-all backdrop-blur-sm"
-              >
-                <Edit3 className="w-3.5 h-3.5" />
-                <span>Relocate / Edit Location</span>
-              </button>
             </div>
 
-            <div className="bg-teal-950/90 p-2.5 rounded-xl border border-teal-600/60 flex items-center justify-between gap-2 text-xs">
-              <div className="flex items-center gap-2 overflow-hidden">
-                <MapPin className="w-4 h-4 text-[#84CC16] shrink-0" />
-                <div className="truncate">
-                  <span className="font-extrabold text-white text-xs block truncate">
-                    {currentVolunteer.currentLocation.areaName}
-                  </span>
-                  <span className="text-[10px] text-teal-200 block truncate">
+            <div className="flex-1 w-full space-y-3">
+              <div className="flex items-start justify-between gap-1.5">
+                <div className="overflow-hidden">
+                  <div className="flex items-center gap-1.5 text-[#84CC16] font-black text-sm">
+                    <MapPin className="w-4 h-4 shrink-0" />
+                    <span className="truncate">{currentVolunteer.currentLocation.areaName}</span>
+                  </div>
+                  <p className="text-xs text-teal-200 truncate mt-0.5 max-w-[200px]">
                     {currentVolunteer.currentLocation.address}
-                  </span>
+                  </p>
                 </div>
+                <span className="text-[10px] bg-teal-900 text-teal-300 px-2.5 py-1 rounded-full font-black border border-teal-700 shrink-0">
+                  {selectedRadiusKm >= 999 ? 'City' : `${selectedRadiusKm} km`}
+                </span>
               </div>
+
               <button
                 onClick={() => {
                   setTempEditLocation(currentVolunteer.currentLocation);
                   setShowLocationModal(true);
                 }}
-                className="text-[11px] font-extrabold text-[#84CC16] hover:underline shrink-0 pl-1"
+                className="w-full py-2 bg-[#84CC16] hover:bg-lime-400 text-slate-950 font-black text-xs rounded-xl shadow-md flex items-center justify-center gap-1.5 transition-all"
               >
-                Edit ✏️
+                <Edit3 className="w-4 h-4" />
+                <span>Relocate / Edit Base Location</span>
               </button>
             </div>
-          </div>
-
-          {/* Sub Nav Tabs */}
-          <div className="grid grid-cols-4 gap-1 p-1 bg-teal-950/90 rounded-2xl border border-teal-700/60 text-center text-[11px] font-bold">
-            <button
-              onClick={() => setActiveTab('incoming')}
-              className={`py-2 rounded-xl transition-all ${activeTab === 'incoming' ? 'bg-[#84CC16] text-slate-950 shadow font-black' : 'text-teal-300'}`}
-            >
-              Incoming ({unassignedRequests.length})
-            </button>
-            <button
-              onClick={() => setActiveTab('tasks')}
-              className={`py-2 rounded-xl transition-all ${activeTab === 'tasks' ? 'bg-[#0D9488] text-white shadow font-black' : 'text-teal-300'}`}
-            >
-              Active ({activeMissions.length})
-            </button>
-            <button
-              onClick={() => setActiveTab('completed')}
-              className={`py-2 rounded-xl transition-all ${activeTab === 'completed' ? 'bg-[#0D9488] text-white shadow font-black' : 'text-teal-300'}`}
-            >
-              Completed ({completedMissions.length})
-            </button>
-            <button
-              onClick={() => setActiveTab('training')}
-              className={`py-2 rounded-xl transition-all ${activeTab === 'training' ? 'bg-[#0D9488] text-white shadow font-black' : 'text-teal-300'}`}
-            >
-              Training
-            </button>
           </div>
 
         </div>
       </div>
 
-      <div className="max-w-md mx-auto px-4 mt-6">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 mt-8">
         
         {/* Tab 1: Incoming Feed */}
         {activeTab === 'incoming' && (
-          <div className="space-y-4">
+          <div className="space-y-6">
             
             {/* Live Range & Proximity Filter Bar */}
-            <div className="bg-white p-4 rounded-3xl border border-teal-200 shadow-md space-y-3">
+            <div className="bg-white p-5 rounded-3xl border border-teal-200 shadow-md space-y-3">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <Sliders className="w-4 h-4 text-teal-600" />
@@ -409,7 +405,7 @@ export const VolunteerApp: React.FC = () => {
                     Rescue Range: <b className="text-teal-700">{selectedRadiusKm >= 999 ? 'Entire City (No Limit)' : `Within ${selectedRadiusKm} km`}</b>
                   </span>
                 </div>
-                <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 bg-teal-50 text-teal-800 rounded-full border border-teal-200">
+                <span className="text-[10px] font-extrabold uppercase px-2.5 py-0.5 bg-teal-50 text-teal-800 rounded-full border border-teal-200">
                   {withinRadiusRequests.length} in range
                 </span>
               </div>
@@ -419,7 +415,7 @@ export const VolunteerApp: React.FC = () => {
                   <button
                     key={r}
                     onClick={() => handleRadiusChange(r)}
-                    className={`px-3 py-1 rounded-xl text-xs font-black transition-all ${
+                    className={`px-3.5 py-1.5 rounded-xl text-xs font-black transition-all ${
                       selectedRadiusKm === r
                         ? 'bg-[#0D9488] text-white shadow-md scale-105'
                         : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
@@ -431,13 +427,13 @@ export const VolunteerApp: React.FC = () => {
               </div>
 
               {outsideRadiusCount > 0 && (
-                <div className="p-2 bg-amber-50 rounded-xl border border-amber-200 text-[11px] text-amber-900 flex items-center justify-between">
+                <div className="p-2.5 bg-amber-50 rounded-2xl border border-amber-200 text-xs text-amber-900 flex items-center justify-between">
                   <span>⚠️ <b>{outsideRadiusCount}</b> order(s) available further than {selectedRadiusKm} km</span>
                   <button
                     onClick={() => handleRadiusChange(50)}
                     className="font-black text-amber-800 underline hover:text-amber-950 ml-2 whitespace-nowrap"
                   >
-                    Expand Range →
+                    Expand Range to 50 km →
                   </button>
                 </div>
               )}
@@ -446,16 +442,16 @@ export const VolunteerApp: React.FC = () => {
             <div className="flex items-center justify-between">
               <h3 className="font-extrabold text-slate-900 text-base flex items-center gap-2">
                 <Zap className="w-5 h-5 text-amber-500" />
-                Nearby Rescue Orders (Live Proximity)
+                Nearby Rescue Orders (Live Radar Feed)
               </h3>
-              <span className="text-[10px] text-teal-700 font-bold uppercase">Real-time Feed</span>
+              <span className="text-[10px] text-teal-700 font-bold uppercase">Real-time GPS Dispatch</span>
             </div>
 
             {currentVolunteer.status !== 'available' ? (
-              <div className="bg-amber-950 border-2 border-amber-500 rounded-3xl p-6 text-white text-center space-y-4 shadow-xl">
-                <AlertCircle className="w-10 h-10 text-amber-400 mx-auto" />
+              <div className="bg-amber-950 border-2 border-amber-500 rounded-3xl p-8 text-white text-center space-y-4 shadow-xl">
+                <AlertCircle className="w-12 h-12 text-amber-400 mx-auto" />
                 <h4 className="font-extrabold text-lg text-white">You Are Currently Offline / Busy</h4>
-                <p className="text-xs text-amber-200">
+                <p className="text-xs text-amber-200 max-w-md mx-auto">
                   Order requests are hidden when you are offline. Toggle your status to <b>AVAILABLE</b> to view & accept live food rescue orders.
                 </p>
                 <button
@@ -468,122 +464,130 @@ export const VolunteerApp: React.FC = () => {
             ) : (
               <>
                 {/* Unmatched Shelter Needs (Waiting for Donor Food) */}
-            {unmatchedShelterNeeds.length > 0 && (
-              <div className="space-y-3">
-                <h4 className="text-xs font-black uppercase tracking-wider text-amber-800 flex items-center gap-1.5">
-                  <AlertCircle className="w-4 h-4 text-amber-600" />
-                  Food Relief Requests (Awaiting Food Donor Match)
-                </h4>
-                {unmatchedShelterNeeds.map(req => (
-                  <div key={req.id} className="bg-amber-950 text-white rounded-3xl p-5 border-2 border-amber-600 shadow-xl space-y-3">
-                    <div className="flex items-center justify-between border-b border-amber-800/80 pb-2.5">
-                      <div>
-                        <span className="bg-amber-500 text-slate-950 font-black text-[9px] uppercase px-2 py-0.5 rounded-full">
-                          Awaiting Food Donor Match
-                        </span>
-                        <h4 className="font-extrabold text-base text-white mt-1">{req.donorName}</h4>
-                        <p className="text-xs text-amber-200">{req.location.address}</p>
-                      </div>
-                      <GoldenHourBadge deadlineIso={req.goldenHourDeadline} size="sm" />
-                    </div>
+                {unmatchedShelterNeeds.length > 0 && (
+                  <div className="space-y-3">
+                    <h4 className="text-xs font-black uppercase tracking-wider text-amber-800 flex items-center gap-1.5">
+                      <AlertCircle className="w-4 h-4 text-amber-600" />
+                      Food Relief Requests (Awaiting Food Donor Match)
+                    </h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                      {unmatchedShelterNeeds.map(req => (
+                        <div key={req.id} className="bg-amber-950 text-white rounded-3xl p-5 border-2 border-amber-600 shadow-xl flex flex-col justify-between space-y-4">
+                          <div className="space-y-3">
+                            <div className="flex items-center justify-between border-b border-amber-800/80 pb-2.5">
+                              <div>
+                                <span className="bg-amber-500 text-slate-950 font-black text-[9px] uppercase px-2 py-0.5 rounded-full">
+                                  Awaiting Food Donor Match
+                                </span>
+                                <h4 className="font-extrabold text-base text-white mt-1">{req.donorName}</h4>
+                                <p className="text-xs text-amber-200">{req.location.address}</p>
+                              </div>
+                              <GoldenHourBadge deadlineIso={req.goldenHourDeadline} size="sm" />
+                            </div>
 
-                    <div className="p-3 bg-amber-900/50 rounded-2xl border border-amber-800 text-xs space-y-1">
-                      <span className="text-amber-200 block font-bold">Requested Food Need:</span>
-                      <span className="font-extrabold text-white">{req.estimatedServings} Meals Needed ({req.foodType})</span>
-                      <p className="text-[10px] text-amber-300 italic pt-1">
-                        ⚠️ Waiting for a nearby donor to submit surplus food before volunteer pickup can begin.
-                      </p>
-                    </div>
+                            <div className="p-3 bg-amber-900/50 rounded-2xl border border-amber-800 text-xs space-y-1">
+                              <span className="text-amber-200 block font-bold">Requested Food Need:</span>
+                              <span className="font-extrabold text-white">{req.estimatedServings} Meals Needed ({req.foodType})</span>
+                              <p className="text-[10px] text-amber-300 italic pt-1">
+                                ⚠️ Waiting for a nearby donor to submit surplus food before volunteer pickup can begin.
+                              </p>
+                            </div>
+                          </div>
 
-                    <button
-                      disabled
-                      className="w-full py-3 bg-slate-900/80 text-amber-400 font-extrabold text-xs rounded-2xl border border-amber-600/40 cursor-not-allowed opacity-90 flex items-center justify-center gap-2"
-                    >
-                      <span>⏳ Awaiting Food Donor to Post Food...</span>
-                    </button>
+                          <button
+                            disabled
+                            className="w-full py-3 bg-slate-900/80 text-amber-400 font-extrabold text-xs rounded-2xl border border-amber-600/40 cursor-not-allowed opacity-90 flex items-center justify-center gap-2"
+                          >
+                            <span>⏳ Awaiting Food Donor to Post Food...</span>
+                          </button>
+                        </div>
+                      ))}
+                    </div>
                   </div>
-                ))}
-              </div>
-            )}
-
-            {/* Donor Food Offers Ready for Pickup (Filtered by Radius) */}
-            {withinRadiusRequests.length === 0 && unmatchedShelterNeeds.length === 0 ? (
-              <div className="bg-white p-8 rounded-3xl border border-teal-200 text-center space-y-3 shadow">
-                <MapPin className="w-10 h-10 text-teal-600 mx-auto" />
-                <p className="font-bold text-slate-800 text-sm">No Pending Orders Within {selectedRadiusKm >= 999 ? 'City' : `${selectedRadiusKm} km`}</p>
-                <p className="text-xs text-slate-500">
-                  {outsideRadiusCount > 0
-                    ? `There are ${outsideRadiusCount} orders further away. Expand your search radius or relocate to view them.`
-                    : 'New donor requests in your vicinity will broadcast instant alert popups here.'}
-                </p>
-                {outsideRadiusCount > 0 && (
-                  <button
-                    onClick={() => handleRadiusChange(50)}
-                    className="px-4 py-2 bg-[#0D9488] text-white font-bold text-xs rounded-xl shadow"
-                  >
-                    View All Orders ({sortedUnassignedRequests.length})
-                  </button>
                 )}
-              </div>
-            ) : (
-              withinRadiusRequests.map(req => (
-                <div key={req.id} className="bg-teal-950 text-white rounded-3xl p-5 border-2 border-teal-600 shadow-2xl space-y-4">
-                  <div className="flex items-center justify-between border-b border-teal-800 pb-3">
-                    <div>
-                      <span className="text-[10px] font-bold uppercase text-[#84CC16]">⚡ Donor Surplus Food Available #{req.id}</span>
-                      <h4 className="font-extrabold text-base text-white">{req.donorName}</h4>
-                      <p className="text-xs text-teal-200">{req.location.address}</p>
-                    </div>
-                    <GoldenHourBadge deadlineIso={req.goldenHourDeadline} size="sm" />
+
+                {/* Donor Food Offers Ready for Pickup (Horizontal Grid) */}
+                {withinRadiusRequests.length === 0 && unmatchedShelterNeeds.length === 0 ? (
+                  <div className="bg-white p-12 rounded-3xl border border-teal-200 text-center space-y-3 shadow-md">
+                    <MapPin className="w-12 h-12 text-teal-600 mx-auto" />
+                    <p className="font-extrabold text-slate-800 text-base">No Pending Orders Within {selectedRadiusKm >= 999 ? 'City' : `${selectedRadiusKm} km`}</p>
+                    <p className="text-xs text-slate-500 max-w-md mx-auto">
+                      {outsideRadiusCount > 0
+                        ? `There are ${outsideRadiusCount} orders further away. Expand your search radius or relocate to view them.`
+                        : 'New donor requests in your vicinity will broadcast instant alert popups here.'}
+                    </p>
+                    {outsideRadiusCount > 0 && (
+                      <button
+                        onClick={() => handleRadiusChange(50)}
+                        className="px-5 py-2.5 bg-[#0D9488] text-white font-bold text-xs rounded-xl shadow"
+                      >
+                        View All Orders ({sortedUnassignedRequests.length})
+                      </button>
+                    )}
                   </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {withinRadiusRequests.map(req => (
+                      <div key={req.id} className="bg-teal-950 text-white rounded-3xl p-5 border-2 border-teal-600 shadow-2xl flex flex-col justify-between space-y-4 hover:border-teal-400 transition-colors">
+                        <div className="space-y-3">
+                          <div className="flex items-start justify-between border-b border-teal-800 pb-3 gap-2">
+                            <div>
+                              <span className="text-[10px] font-bold uppercase text-[#84CC16]">⚡ Donor Surplus #{req.id}</span>
+                              <h4 className="font-extrabold text-base text-white">{req.donorName}</h4>
+                              <p className="text-xs text-teal-200 line-clamp-1">{req.location.address}</p>
+                            </div>
+                            <GoldenHourBadge deadlineIso={req.goldenHourDeadline} size="sm" />
+                          </div>
 
-                  <div className="bg-teal-900/60 p-3 rounded-2xl border border-teal-800 grid grid-cols-2 gap-2 text-xs">
-                    <div>
-                      <span className="text-teal-200 block">Available Food</span>
-                      <span className="font-bold text-white">{req.foodType}</span>
-                    </div>
-                    <div>
-                      <span className="text-teal-200 block">Weight</span>
-                      <span className="font-bold text-[#84CC16]">{req.quantityKg} kg (~{req.estimatedServings} meals)</span>
-                    </div>
+                          <div className="bg-teal-900/60 p-3 rounded-2xl border border-teal-800 grid grid-cols-2 gap-2 text-xs">
+                            <div>
+                              <span className="text-teal-200 block">Available Food</span>
+                              <span className="font-bold text-white">{req.foodType}</span>
+                            </div>
+                            <div>
+                              <span className="text-teal-200 block">Weight</span>
+                              <span className="font-bold text-[#84CC16]">{req.quantityKg} kg (~{req.estimatedServings} meals)</span>
+                            </div>
+                          </div>
+
+                          {/* Distance Badge */}
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2 bg-slate-900/80 px-3 py-1.5 rounded-xl border border-teal-700/60">
+                              <MapPin className="w-3.5 h-3.5 text-[#84CC16]" />
+                              <span className="text-xs font-extrabold text-[#84CC16]">{getDistanceKm(req)} km away</span>
+                            </div>
+                            <span className="text-[10px] text-teal-400 font-mono">{req.location.areaName}</span>
+                          </div>
+
+                          {req.matchedShelterName && (
+                            <div className="p-2.5 bg-emerald-900/70 border border-emerald-500/60 rounded-xl text-xs text-emerald-200 flex items-center justify-between">
+                              <span className="truncate">Destination: <b>{req.matchedShelterName}</b></span>
+                              <span className="bg-emerald-500 text-slate-950 font-black text-[9px] px-2 py-0.5 rounded-full shrink-0 ml-1">MATCHED</span>
+                            </div>
+                          )}
+                        </div>
+
+                        <button
+                          onClick={() => handleAcceptOrder(req.id)}
+                          disabled={hasActiveMission || currentVolunteer.status === 'busy'}
+                          className={`w-full py-3.5 font-black text-xs rounded-2xl shadow-xl flex items-center justify-center gap-2 transition-all ${
+                            hasActiveMission || currentVolunteer.status === 'busy'
+                              ? 'bg-slate-800 text-slate-400 border border-slate-700 cursor-not-allowed'
+                              : 'bg-[#84CC16] hover:bg-lime-400 text-slate-950 hover:scale-105'
+                          }`}
+                        >
+                          <span>
+                            {hasActiveMission || currentVolunteer.status === 'busy'
+                              ? '🔒 Active Mission in Progress — Complete current order first'
+                              : 'Accept Rescue Order & Start Step 2 (+70 Pts)'}
+                          </span>
+                        </button>
+                      </div>
+                    ))}
                   </div>
-
-                  {/* Distance Badge */}
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2 bg-slate-900/80 px-3 py-1.5 rounded-xl border border-teal-700/60">
-                      <MapPin className="w-3.5 h-3.5 text-[#84CC16]" />
-                      <span className="text-xs font-extrabold text-[#84CC16]">{getDistanceKm(req)} km away</span>
-                    </div>
-                    <span className="text-[10px] text-teal-400 font-mono">{req.location.areaName}</span>
-                  </div>
-
-                  {req.matchedShelterName && (
-                    <div className="p-2.5 bg-emerald-900/70 border border-emerald-500/60 rounded-xl text-xs text-emerald-200 flex items-center justify-between">
-                      <span>Destination: <b>{req.matchedShelterName}</b></span>
-                      <span className="bg-emerald-500 text-slate-950 font-black text-[9px] px-2 py-0.5 rounded-full">MATCHED</span>
-                    </div>
-                  )}
-
-                  <button
-                    onClick={() => handleAcceptOrder(req.id)}
-                    disabled={hasActiveMission || currentVolunteer.status === 'busy'}
-                    className={`w-full py-3.5 font-black text-sm rounded-2xl shadow-xl flex items-center justify-center gap-2 transition-all ${
-                      hasActiveMission || currentVolunteer.status === 'busy'
-                        ? 'bg-slate-800 text-slate-400 border border-slate-700 cursor-not-allowed'
-                        : 'bg-[#84CC16] hover:bg-lime-400 text-slate-950 hover:scale-105'
-                    }`}
-                  >
-                    <span>
-                      {hasActiveMission || currentVolunteer.status === 'busy'
-                        ? '🔒 Active Mission in Progress — Complete current order first'
-                        : 'Accept Rescue Order & Start Step 2 (+70 Pts)'}
-                    </span>
-                  </button>
-                </div>
-              ))
+                )}
+              </>
             )}
-            </>
-          )}
           </div>
         )}
 
@@ -591,76 +595,118 @@ export const VolunteerApp: React.FC = () => {
         {activeTab === 'tasks' && (
           <div className="space-y-6">
             {activeMissions.length === 0 ? (
-              <div className="bg-white p-8 rounded-3xl border border-teal-200 text-center space-y-3 shadow-md">
+              <div className="bg-white p-12 rounded-3xl border border-teal-200 text-center space-y-3 shadow-md">
                 <ShieldCheck className="w-12 h-12 text-teal-600 mx-auto" />
-                <h3 className="font-bold text-slate-800 text-base">No Active Accepted Missions</h3>
-                <p className="text-xs text-slate-500">Go to "Incoming" tab to accept nearby Swiggy requests.</p>
+                <h3 className="font-extrabold text-slate-900 text-lg">No Active Accepted Missions</h3>
+                <p className="text-xs text-slate-500">Go to "Incoming" tab to accept nearby Swiggy food rescue orders.</p>
               </div>
             ) : (
               activeMissions.map(req => (
-                <div key={req.id} className="bg-white text-slate-900 rounded-3xl border border-teal-200 shadow-xl overflow-hidden space-y-4">
+                <div key={req.id} className="bg-white text-slate-900 rounded-3xl border border-teal-200 shadow-2xl overflow-hidden">
                   
-                  <div className="bg-teal-950 p-4 text-white flex items-center justify-between">
+                  {/* Top Banner */}
+                  <div className="bg-teal-950 px-6 py-4 text-white flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                     <div>
-                      <span className="text-[10px] font-bold uppercase text-teal-300">Active Task #{req.id}</span>
-                      <h3 className="font-extrabold text-base text-white">{req.donorName}</h3>
+                      <span className="text-[10px] font-bold uppercase text-teal-300">Active Rescue Mission #{req.id}</span>
+                      <h3 className="font-black text-lg text-white">{req.donorName}</h3>
                     </div>
                     
                     <button
                       onClick={() => setActiveChatRequest(req)}
-                      className="px-3.5 py-1.5 bg-[#84CC16] text-slate-950 font-black text-xs rounded-xl flex items-center gap-1 shadow"
+                      className="px-4 py-2 bg-[#84CC16] hover:bg-lime-400 text-slate-950 font-black text-xs rounded-xl flex items-center gap-1.5 shadow transition-all self-start sm:self-auto"
                     >
                       <MessageSquare className="w-4 h-4" />
-                      <span>Chat with Donor</span>
+                      <span>Chat with Donor & NGO</span>
                     </button>
                   </div>
 
-                  <div className="p-4 space-y-4">
-                    {req.status === 'accepted' && (
-                      <div className="space-y-3">
-                        <div className="p-3 bg-teal-50 border border-teal-200 rounded-2xl text-xs text-teal-900 space-y-1">
-                          <span className="font-extrabold block text-teal-900">Step 2 Active: Arrived at Pickup</span>
-                          <p className="text-[11px] text-slate-600">Complete checklist & ask Donor to click <b>"Confirm Food Handed Over"</b> on Step 3!</p>
+                  {/* 2-Column Wide Horizontal Layout */}
+                  <div className="p-6 grid grid-cols-1 lg:grid-cols-12 gap-6">
+                    
+                    {/* Left Column: Mission & Route Details */}
+                    <div className="lg:col-span-5 space-y-4">
+                      <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 space-y-3">
+                        <span className="text-[10px] font-bold uppercase text-slate-500 block">Food Order Details</span>
+                        <div className="flex items-center justify-between">
+                          <span className="font-extrabold text-slate-900 text-sm">{req.foodType}</span>
+                          <span className="text-xs font-black text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-xl border border-emerald-200">
+                            {req.quantityKg} kg (~{req.estimatedServings} meals)
+                          </span>
                         </div>
-
-                        <div className="bg-slate-50 p-3 rounded-2xl border border-slate-200 space-y-2 text-xs font-semibold text-slate-700">
-                          <label className="flex items-center gap-2 cursor-pointer">
-                            <input type="checkbox" checked={checklist.packagingVerified} onChange={e => setChecklist(prev => ({ ...prev, packagingVerified: e.target.checked }))} className="w-4 h-4 rounded text-teal-600" />
-                            <span>Packaging intact & clean containers</span>
-                          </label>
-                          <label className="flex items-center gap-2 cursor-pointer">
-                            <input type="checkbox" checked={checklist.temperatureChecked} onChange={e => setChecklist(prev => ({ ...prev, temperatureChecked: e.target.checked }))} className="w-4 h-4 rounded text-teal-600" />
-                            <span>Freshness & temperature check passed</span>
-                          </label>
+                        <div className="text-xs text-slate-600 space-y-1 pt-2 border-t border-slate-200">
+                          <div>📍 <b>Pickup:</b> {req.location.address}</div>
+                          <div>🏢 <b>Destination:</b> {req.matchedShelterName || 'Hope Children Shelter & NGO'}</div>
                         </div>
-
-                        <div className="space-y-2">
-                          <label className="block text-[10px] font-bold uppercase text-slate-600">Pickup Photo Proof Capture</label>
-                          <input type="file" accept="image/*" onChange={handlePickupFileUpload} className="text-xs text-slate-600 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:bg-teal-700 file:text-white" />
-                        </div>
-
-                        <button onClick={() => handlePickup(req.id)} className="w-full py-3 bg-[#0D9488] hover:bg-[#0F766E] text-white font-extrabold text-xs rounded-2xl shadow flex items-center justify-center gap-2">
-                          <Camera className="w-4 h-4" />
-                          <span>Capture Pickup Proof & Start Step 3 Transit</span>
-                        </button>
                       </div>
-                    )}
 
-                    {req.status === 'in_transit' && (
-                      <div className="space-y-3">
-                        <div className="p-3 bg-amber-50 border border-amber-200 rounded-2xl text-xs text-amber-900 space-y-1">
-                          <span className="font-extrabold block text-amber-900">Step 3 Active: Food in Transit</span>
-                          <p className="text-[11px] text-slate-600">Heading to shelter hotspot. Click below to submit delivery proof for Step 4!</p>
-                        </div>
-
-                        <input type="text" value={recipientName} onChange={e => setRecipientName(e.target.value)} className="w-full px-3 py-2 border border-slate-300 text-slate-900 rounded-xl text-xs font-semibold" />
-                        <input type="file" accept="image/*" onChange={handleDeliveryFileUpload} className="text-xs text-slate-600 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:bg-teal-700 file:text-white" />
-                        
-                        <button onClick={() => handleDeliver(req.id)} className="w-full py-3.5 bg-gradient-to-r from-teal-600 to-emerald-600 text-white font-extrabold text-xs rounded-2xl shadow">
-                          <CheckCircle2 className="w-4 h-4" /> Submit Delivery Proof (+70 Pts)
-                        </button>
+                      <div className="p-4 bg-teal-50/70 border border-teal-200 rounded-2xl space-y-2">
+                        <span className="text-[10px] font-black uppercase text-teal-800 block">Golden Hour Timeline</span>
+                        <GoldenHourBadge deadlineIso={req.goldenHourDeadline} size="sm" />
                       </div>
-                    )}
+                    </div>
+
+                    {/* Right Column: Interactive Checklist & Action Step */}
+                    <div className="lg:col-span-7 space-y-4">
+                      {req.status === 'accepted' && (
+                        <div className="space-y-4">
+                          <div className="p-4 bg-teal-50 border border-teal-200 rounded-2xl text-xs text-teal-900 space-y-1">
+                            <span className="font-extrabold text-sm block text-teal-900">Step 2 Active: Arrived at Donor Pickup</span>
+                            <p className="text-xs text-slate-600">
+                              Complete quality checklist & ask Donor to click <b>"Confirm Food Handed Over"</b> on Step 3!
+                            </p>
+                          </div>
+
+                          <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 space-y-2.5 text-xs font-bold text-slate-700">
+                            <label className="flex items-center gap-2.5 cursor-pointer">
+                              <input type="checkbox" checked={checklist.packagingVerified} onChange={e => setChecklist(prev => ({ ...prev, packagingVerified: e.target.checked }))} className="w-4 h-4 rounded text-teal-600" />
+                              <span>Packaging intact & sealed in food-grade clean containers</span>
+                            </label>
+                            <label className="flex items-center gap-2.5 cursor-pointer">
+                              <input type="checkbox" checked={checklist.temperatureChecked} onChange={e => setChecklist(prev => ({ ...prev, temperatureChecked: e.target.checked }))} className="w-4 h-4 rounded text-teal-600" />
+                              <span>Freshness & thermal temperature check verified (+65°C)</span>
+                            </label>
+                          </div>
+
+                          <div className="space-y-2">
+                            <label className="block text-[10px] font-bold uppercase text-slate-600">Capture Pickup Photo Proof</label>
+                            <input type="file" accept="image/*" onChange={handlePickupFileUpload} className="text-xs text-slate-600 file:py-2 file:px-4 file:rounded-xl file:border-0 file:bg-teal-700 file:text-white file:font-bold" />
+                          </div>
+
+                          <button onClick={() => handlePickup(req.id)} className="w-full py-3.5 bg-[#0D9488] hover:bg-[#0F766E] text-white font-extrabold text-xs rounded-2xl shadow-lg flex items-center justify-center gap-2 transition-all">
+                            <Camera className="w-4 h-4" />
+                            <span>Capture Pickup Proof & Start Step 3 Transit</span>
+                          </button>
+                        </div>
+                      )}
+
+                      {req.status === 'in_transit' && (
+                        <div className="space-y-4">
+                          <div className="p-4 bg-amber-50 border border-amber-200 rounded-2xl text-xs text-amber-900 space-y-1">
+                            <span className="font-extrabold text-sm block text-amber-900">Step 3 Active: Food in Transit to NGO</span>
+                            <p className="text-xs text-slate-600">
+                              Heading to shelter destination. Hand over food and request recipient signature or photo proof!
+                            </p>
+                          </div>
+
+                          <div className="space-y-3">
+                            <div>
+                              <label className="block text-[10px] font-bold uppercase text-slate-600 mb-1">Recipient / In-Charge Name</label>
+                              <input type="text" value={recipientName} onChange={e => setRecipientName(e.target.value)} className="w-full px-4 py-2.5 border border-slate-300 text-slate-900 rounded-xl text-xs font-bold" />
+                            </div>
+
+                            <div>
+                              <label className="block text-[10px] font-bold uppercase text-slate-600 mb-1">Upload Delivery Handover Photo</label>
+                              <input type="file" accept="image/*" onChange={handleDeliveryFileUpload} className="text-xs text-slate-600 file:py-2 file:px-4 file:rounded-xl file:border-0 file:bg-teal-700 file:text-white file:font-bold" />
+                            </div>
+                          </div>
+                          
+                          <button onClick={() => handleDeliver(req.id)} className="w-full py-4 bg-gradient-to-r from-teal-600 to-emerald-600 hover:from-teal-500 hover:to-emerald-500 text-white font-black text-xs rounded-2xl shadow-xl transition-all flex items-center justify-center gap-2">
+                            <CheckCircle2 className="w-4 h-4" />
+                            <span>Submit Delivery Proof (+70 Pts)</span>
+                          </button>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
               ))
@@ -670,105 +716,118 @@ export const VolunteerApp: React.FC = () => {
 
         {/* Tab 3: Completed Tasks History */}
         {activeTab === 'completed' && (
-          <div className="space-y-4">
+          <div className="space-y-6">
             <div className="flex items-center justify-between">
               <h3 className="font-extrabold text-slate-900 text-base flex items-center gap-2">
                 <CheckCircle2 className="w-5 h-5 text-emerald-600" />
                 Completed Rescue Tasks History
               </h3>
-              <span className="text-[10px] text-emerald-800 font-bold uppercase bg-emerald-100 px-2.5 py-0.5 rounded-full border border-emerald-300">
+              <span className="text-[10px] text-emerald-800 font-bold uppercase bg-emerald-100 px-3 py-1 rounded-full border border-emerald-300">
                 {completedMissions.length} Rescues Completed
               </span>
             </div>
 
             {completedMissions.length === 0 ? (
-              <div className="bg-white p-8 rounded-3xl border border-slate-200 text-center space-y-3 shadow-md">
+              <div className="bg-white p-12 rounded-3xl border border-slate-200 text-center space-y-3 shadow-md">
                 <PackageCheck className="w-12 h-12 text-slate-400 mx-auto" />
-                <h3 className="font-bold text-slate-800 text-base">No Completed Missions Yet</h3>
+                <h3 className="font-extrabold text-slate-800 text-base">No Completed Missions Yet</h3>
                 <p className="text-xs text-slate-500">
                   Once an NGO confirms food delivery receipt (Step 4), completed rescues will be archived here.
                 </p>
               </div>
             ) : (
-              completedMissions.map(req => {
-                const isShelterNeed = req.requestType === 'shelter_need';
-                const matchedDonorOffer = isShelterNeed 
-                  ? requests.find(r => r.id === req.matchedDonorRequestId || r.matchedDonorRequestId === req.id)
-                  : null;
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {completedMissions.map(req => {
+                  const isShelterNeed = req.requestType === 'shelter_need';
+                  const matchedDonorOffer = isShelterNeed 
+                    ? requests.find(r => r.id === req.matchedDonorRequestId || r.matchedDonorRequestId === req.id)
+                    : null;
 
-                const displayDonorName = isShelterNeed
-                  ? (matchedDonorOffer?.donorName || 'Sri Grand Marriage Hall')
-                  : req.donorName;
+                  const displayDonorName = isShelterNeed
+                    ? (matchedDonorOffer?.donorName || 'Sri Grand Marriage Hall')
+                    : req.donorName;
 
-                const displayDonorAddress = isShelterNeed
-                  ? (matchedDonorOffer?.location.address || '45 Pondy Bazaar, T. Nagar, Chennai')
-                  : req.location.address;
+                  const displayDonorAddress = isShelterNeed
+                    ? (matchedDonorOffer?.location.address || '45 Pondy Bazaar, T. Nagar, Chennai')
+                    : req.location.address;
 
-                const displayShelterName = isShelterNeed
-                  ? req.donorName
-                  : (req.matchedShelterName || 'Hope Children Shelter & NGO');
+                  const displayShelterName = isShelterNeed
+                    ? req.donorName
+                    : (req.matchedShelterName || 'Hope Children Shelter & NGO');
 
-                return (
-                  <div key={req.id} className="bg-white text-slate-900 rounded-3xl border border-slate-200 shadow-xl overflow-hidden space-y-4 p-5">
-                    <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-                      <div>
-                        <span className="text-[10px] font-extrabold uppercase text-emerald-700 bg-emerald-100 px-2.5 py-0.5 rounded-full border border-emerald-300">
-                          ✓ Step 4 Delivered & NGO Verified
-                        </span>
-                        <h4 className="font-extrabold text-base text-slate-900 mt-1">Order #{req.id}</h4>
+                  return (
+                    <div key={req.id} className="bg-white text-slate-900 rounded-3xl border border-slate-200 shadow-xl overflow-hidden space-y-4 p-5 flex flex-col justify-between">
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                          <div>
+                            <span className="text-[10px] font-extrabold uppercase text-emerald-700 bg-emerald-100 px-2.5 py-0.5 rounded-full border border-emerald-300">
+                              ✓ Step 4 Delivered & NGO Verified
+                            </span>
+                            <h4 className="font-extrabold text-base text-slate-900 mt-1">Order #{req.id}</h4>
+                          </div>
+                          <span className="text-xs font-black text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-xl border border-emerald-200">
+                            +70 Pts
+                          </span>
+                        </div>
+
+                        <div className="grid grid-cols-1 gap-2 text-xs">
+                          <div className="p-3 bg-slate-50 rounded-2xl border border-slate-200/80 space-y-1">
+                            <span className="text-[10px] font-bold uppercase text-slate-400 block">1. Food Donor</span>
+                            <div className="font-extrabold text-slate-800 text-sm flex items-center justify-between">
+                              <span>{displayDonorName}</span>
+                              <span className="text-xs text-slate-500 font-normal">{req.location.areaName}</span>
+                            </div>
+                            <p className="text-slate-500 text-[11px] line-clamp-1">{displayDonorAddress}</p>
+                          </div>
+
+                          <div className="p-3 bg-emerald-50/70 rounded-2xl border border-emerald-200/80 space-y-1">
+                            <span className="text-[10px] font-bold uppercase text-emerald-700 block">2. Food Given</span>
+                            <div className="font-extrabold text-emerald-950 flex items-center justify-between">
+                              <span>{req.foodType}</span>
+                              <span className="text-emerald-700 font-bold">{req.quantityKg} kg (~{req.estimatedServings} meals)</span>
+                            </div>
+                          </div>
+
+                          <div className="p-3 bg-teal-50/70 rounded-2xl border border-teal-200/80 space-y-1">
+                            <span className="text-[10px] font-bold uppercase text-teal-700 block">3. NGO / Shelter Destination</span>
+                            <div className="font-extrabold text-teal-950 flex items-center justify-between">
+                              <span>{displayShelterName}</span>
+                              <span className="text-xs text-teal-700 font-bold">Confirmed Received</span>
+                            </div>
+                          </div>
+                        </div>
                       </div>
-                      <span className="text-xs font-black text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-xl border border-emerald-200">
-                        +70 Pts Awarded
-                      </span>
                     </div>
-
-                    <div className="grid grid-cols-1 gap-2 text-xs">
-                      <div className="p-3 bg-slate-50 rounded-2xl border border-slate-200/80 space-y-1">
-                        <span className="text-[10px] font-bold uppercase text-slate-400 block">1. Food Donor</span>
-                        <div className="font-extrabold text-slate-800 text-sm flex items-center justify-between">
-                          <span>{displayDonorName}</span>
-                          <span className="text-xs text-slate-500 font-normal">{req.location.areaName}</span>
-                        </div>
-                        <p className="text-slate-500 text-[11px]">{displayDonorAddress}</p>
-                      </div>
-
-                      <div className="p-3 bg-emerald-50/70 rounded-2xl border border-emerald-200/80 space-y-1">
-                        <span className="text-[10px] font-bold uppercase text-emerald-700 block">2. Food Given</span>
-                        <div className="font-extrabold text-emerald-950 flex items-center justify-between">
-                          <span>{req.foodType}</span>
-                          <span className="text-emerald-700 font-bold">{req.quantityKg} kg (~{req.estimatedServings} meals)</span>
-                        </div>
-                      </div>
-
-                      <div className="p-3 bg-teal-50/70 rounded-2xl border border-teal-200/80 space-y-1">
-                        <span className="text-[10px] font-bold uppercase text-teal-700 block">3. NGO / Shelter Destination</span>
-                        <div className="font-extrabold text-teal-950 flex items-center justify-between">
-                          <span>{displayShelterName}</span>
-                          <span className="text-xs text-teal-700 font-bold">Confirmed Received</span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })
+                  );
+                })}
+              </div>
             )}
           </div>
         )}
 
         {/* Tab 4: Training */}
         {activeTab === 'training' && (
-          <div className="space-y-4">
-            <div className="bg-white p-5 rounded-3xl border border-teal-200 shadow space-y-2">
-              <h3 className="font-extrabold text-slate-900 text-base flex items-center gap-2">
-                <Award className="w-5 h-5 text-teal-600" /> Training & Certification
+          <div className="space-y-6">
+            <div className="bg-white p-6 rounded-3xl border border-teal-200 shadow-md space-y-2">
+              <h3 className="font-extrabold text-slate-900 text-lg flex items-center gap-2">
+                <Award className="w-5 h-5 text-teal-600" /> Training & Certification Modules
               </h3>
+              <p className="text-xs text-slate-500">Complete safety and food hygiene modules to unlock higher rescue certification tiers.</p>
             </div>
-            {trainingModules.map(mod => (
-              <div key={mod.id} className="bg-white p-4 rounded-2xl border border-slate-200 shadow flex items-center justify-between">
-                <h4 className="font-bold text-slate-900 text-xs">{mod.title}</h4>
-                <span className="bg-emerald-100 text-emerald-800 text-[10px] font-bold px-2 py-1 rounded-lg">Passed ({mod.score}%)</span>
-              </div>
-            ))}
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+              {trainingModules.map(mod => (
+                <div key={mod.id} className="bg-white p-5 rounded-3xl border border-slate-200 shadow-md flex items-center justify-between">
+                  <div>
+                    <h4 className="font-extrabold text-slate-900 text-sm">{mod.title}</h4>
+                    <span className="text-xs text-slate-500 font-medium">{mod.duration} • {mod.category}</span>
+                  </div>
+                  <span className="bg-emerald-100 text-emerald-800 text-[10px] font-extrabold px-3 py-1 rounded-xl border border-emerald-300">
+                    Passed ({mod.score}%)
+                  </span>
+                </div>
+              ))}
+            </div>
           </div>
         )}
 
