@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { haversineDistance } from '../utils/geoUtils';
+import { api } from '../services/api';
 import {
   DonationRequest,
   Volunteer,
@@ -238,6 +239,32 @@ export const FoodBridgeProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [notifications, setNotifications] = useState<NotificationAlert[]>([]);
 
+  // Load & sync data with MongoDB backend on startup
+  useEffect(() => {
+    let isMounted = true;
+    const syncFromMongo = async () => {
+      try {
+        const [mongoUsers, mongoRequests, mongoVolunteers, mongoNotifs] = await Promise.all([
+          api.auth.getUsers(),
+          api.requests.getAll(),
+          api.volunteers.getAll(),
+          api.notifications.get()
+        ]);
+
+        if (isMounted) {
+          if (mongoUsers && mongoUsers.length > 0) setRegisteredUsers(mongoUsers);
+          if (mongoRequests && mongoRequests.length > 0) setRequests(mongoRequests);
+          if (mongoVolunteers && mongoVolunteers.length > 0) setVolunteers(mongoVolunteers);
+          if (mongoNotifs && mongoNotifs.length > 0) setNotifications(mongoNotifs);
+        }
+      } catch (err) {
+        console.warn('MongoDB initial sync error (fallback to local cache):', err);
+      }
+    };
+    syncFromMongo();
+    return () => { isMounted = false; };
+  }, []);
+
   useEffect(() => {
     localStorage.setItem('foodbridge_registered_users', JSON.stringify(registeredUsers));
   }, [registeredUsers]);
@@ -277,7 +304,7 @@ export const FoodBridgeProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       };
     }
 
-    if (password && foundUser.password !== password) {
+    if (password && foundUser.password && foundUser.password !== password) {
       return {
         success: false,
         error: 'Invalid password. Please check your credentials.'
@@ -329,6 +356,7 @@ export const FoodBridgeProvider: React.FC<{ children: React.ReactNode }> = ({ ch
           quizScore: 100,
           serviceRadiusKm: foundUser.serviceRadiusKm || 10
         };
+        api.volunteers.sync(newVolProfile).catch(console.warn);
         return [newVolProfile, ...prev];
       });
     }
@@ -357,6 +385,7 @@ export const FoodBridgeProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     };
 
     setRegisteredUsers(prev => [...prev, created]);
+    api.auth.register(created).catch(e => console.warn('Register DB sync error:', e));
 
     const sessionUser: AuthUser = {
       id: created.id,
@@ -394,6 +423,7 @@ export const FoodBridgeProvider: React.FC<{ children: React.ReactNode }> = ({ ch
           quizScore: 100,
           serviceRadiusKm: created.serviceRadiusKm || 10
         };
+        api.volunteers.sync(newVolProfile).catch(console.warn);
         return [newVolProfile, ...prev];
       });
     }
@@ -412,11 +442,14 @@ export const FoodBridgeProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     setVolunteers(prev =>
       prev.map(v => (v.id === 'vol-1' ? { ...v, quizPassed: true, quizScore: score } : v))
     );
+    api.volunteers.update('vol-1', { quizPassed: true, quizScore: score }).catch(console.warn);
+
     if (authUser) {
       setAuthUser({ ...authUser, quizPassed: true });
       setRegisteredUsers(prev =>
         prev.map(u => (u.id === authUser.id ? { ...u, quizPassed: true } : u))
       );
+      api.auth.updateUser(authUser.id, { quizPassed: true }).catch(console.warn);
     }
   };
 
@@ -431,6 +464,7 @@ export const FoodBridgeProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
     };
     setChatMessages(prev => [...prev, newMsg]);
+    api.chats.send(newMsg).catch(console.warn);
   };
 
   const addNotification = (
@@ -457,12 +491,14 @@ export const FoodBridgeProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         read: false,
         requestId
       };
+      api.notifications.send(notif).catch(console.warn);
       return [notif, ...prev.slice(0, 15)];
     });
   };
 
   const clearNotification = (id: string) => {
     setNotifications(prev => prev.filter(n => n.id !== id));
+    api.notifications.clear(id).catch(console.warn);
   };
 
   const addDonationRequest = (requestData: Omit<DonationRequest, 'id' | 'createdAt' | 'status' | 'isSmallQuantity'>): string => {
@@ -551,13 +587,19 @@ export const FoodBridgeProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       createdAt: new Date().toISOString()
     };
 
+    // Save to MongoDB
+    api.requests.create(newReq).catch(console.warn);
+
     // Single atomic state update to prevent race conditions
     setRequests(prev => {
       let updated = prev;
       if (reqType === 'shelter_need' && matchedDonorRequestId) {
         updated = prev.map(r => r.id === matchedDonorRequestId ? { ...r, status: 'matched', matchedShelterName: requestData.donorName, matchedDonorRequestId: id } : r);
+        api.requests.update(matchedDonorRequestId, { status: 'matched', matchedShelterName: requestData.donorName, matchedDonorRequestId: id }).catch(console.warn);
       } else if (reqType === 'donor_offer' && matchedDonorRequestId) {
-        updated = prev.map(r => r.id === matchedDonorRequestId ? { ...r, status: 'matched', matchedDonorRequestId: id, matchedShelterName: pendingShelterNeedDonorName(prev) } : r);
+        const shelterName = pendingShelterNeedDonorName(prev);
+        updated = prev.map(r => r.id === matchedDonorRequestId ? { ...r, status: 'matched', matchedDonorRequestId: id, matchedShelterName: shelterName } : r);
+        api.requests.update(matchedDonorRequestId, { status: 'matched', matchedDonorRequestId: id, matchedShelterName: shelterName }).catch(console.warn);
       }
       return [newReq, ...updated];
     });
@@ -591,6 +633,18 @@ export const FoodBridgeProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         }
       });
 
+      // Sync changes for all linked requests to MongoDB
+      linkedIds.forEach(id => {
+        api.requests.update(id, {
+          status,
+          ...extraData,
+          assignedVolunteerId: extraData?.assignedVolunteerId || target.assignedVolunteerId,
+          assignedVehicleId: extraData?.assignedVehicleId || target.assignedVehicleId,
+          matchedShelterName: target.matchedShelterName,
+          matchedDonorRequestId: target.matchedDonorRequestId
+        }).catch(console.warn);
+      });
+
       return prev.map(req => {
         if (linkedIds.has(req.id)) {
           const updated = {
@@ -604,12 +658,16 @@ export const FoodBridgeProvider: React.FC<{ children: React.ReactNode }> = ({ ch
           };
 
           if (status === 'delivered') {
+            const volId = req.assignedVolunteerId || target.assignedVolunteerId;
             setVolunteers(vPrev =>
-              vPrev.map(vol =>
-                vol.id === req.assignedVolunteerId || vol.id === target.assignedVolunteerId
-                  ? { ...vol, volunteerPoints: vol.volunteerPoints + 70, totalRescues: vol.totalRescues + 1, status: 'available', currentAssignedRequestId: undefined }
-                  : vol
-              )
+              vPrev.map(vol => {
+                if (vol.id === req.assignedVolunteerId || vol.id === target.assignedVolunteerId) {
+                  const updatedVol = { ...vol, volunteerPoints: vol.volunteerPoints + 70, totalRescues: vol.totalRescues + 1, status: 'available' as VolunteerStatus, currentAssignedRequestId: undefined };
+                  api.volunteers.update(vol.id, { volunteerPoints: updatedVol.volunteerPoints, totalRescues: updatedVol.totalRescues, status: 'available', currentAssignedRequestId: undefined }).catch(console.warn);
+                  return updatedVol;
+                }
+                return vol;
+              })
             );
 
             // 1. Notify Donor: Delivered & Points Earned
@@ -622,7 +680,6 @@ export const FoodBridgeProvider: React.FC<{ children: React.ReactNode }> = ({ ch
             );
 
             // 2. Notify Volunteer: Mission Completed & Points Awarded
-            const volId = req.assignedVolunteerId || target.assignedVolunteerId;
             if (volId) {
               addNotification(
                 'volunteer',
@@ -675,6 +732,15 @@ export const FoodBridgeProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         }
       });
 
+      linkedIds.forEach(id => {
+        api.requests.update(id, {
+          status: 'accepted',
+          assignedVolunteerId: volunteerId,
+          assignedVehicleId: vol?.vehicleType === 'Three Wheeler (Auto)' ? 'veh-1' : 'veh-2',
+          matchedShelterName: target.matchedShelterName
+        }).catch(console.warn);
+      });
+
       return prev.map(req => {
         if (linkedIds.has(req.id)) {
           return {
@@ -692,6 +758,7 @@ export const FoodBridgeProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     setVolunteers(prev =>
       prev.map(v => (v.id === volunteerId || v.name === volunteerId ? { ...v, status: 'busy', currentAssignedRequestId: requestId } : v))
     );
+    api.volunteers.update(volunteerId, { status: 'busy', currentAssignedRequestId: requestId }).catch(console.warn);
 
     const req = requests.find(r => r.id === requestId);
     if (req) {
@@ -723,6 +790,7 @@ export const FoodBridgeProvider: React.FC<{ children: React.ReactNode }> = ({ ch
 
   const toggleVolunteerStatus = (volunteerId: string, status: VolunteerStatus) => {
     setVolunteers(prev => prev.map(v => (v.id === volunteerId ? { ...v, status } : v)));
+    api.volunteers.update(volunteerId, { status }).catch(console.warn);
   };
 
   const updateVolunteerLocation = (volunteerId: string, lat: number, lng: number, address: string, areaName: string) => {
@@ -734,6 +802,7 @@ export const FoodBridgeProvider: React.FC<{ children: React.ReactNode }> = ({ ch
           : v
       )
     );
+    api.volunteers.update(volunteerId, { currentLocation: newLoc }).catch(console.warn);
 
     // Persist to authUser if current user is this volunteer
     if (authUser && (authUser.id === volunteerId || authUser.name === volunteerId)) {
@@ -748,6 +817,7 @@ export const FoodBridgeProvider: React.FC<{ children: React.ReactNode }> = ({ ch
           : u
       )
     );
+    api.auth.updateUser(volunteerId, { location: newLoc }).catch(console.warn);
   };
 
   const updateVolunteerRadius = (volunteerId: string, radiusKm: number) => {
@@ -758,6 +828,7 @@ export const FoodBridgeProvider: React.FC<{ children: React.ReactNode }> = ({ ch
           : v
       )
     );
+    api.volunteers.update(volunteerId, { serviceRadiusKm: radiusKm }).catch(console.warn);
 
     if (authUser && (authUser.id === volunteerId || authUser.name === volunteerId)) {
       setAuthUser(prev => prev ? { ...prev, serviceRadiusKm: radiusKm } : null);
@@ -770,6 +841,7 @@ export const FoodBridgeProvider: React.FC<{ children: React.ReactNode }> = ({ ch
           : u
       )
     );
+    api.auth.updateUser(volunteerId, { serviceRadiusKm: radiusKm }).catch(console.warn);
   };
 
   const calculateMatchingScores = (requestId: string): MatchingScore[] => {
