@@ -99,7 +99,7 @@ export const Navbar: React.FC = () => {
               {authUser && (
                 <div className="flex items-center gap-2 pl-2 border-l border-slate-800">
                   <div className="hidden xl:block text-right">
-                    <div className="text-xs font-bold text-slate-200">{authUser.name}</div>
+                    <div className="text-xs font-bold text-slate-200">{authUser.establishmentName || authUser.name}</div>
                     <div className="text-[10px] text-emerald-400 uppercase font-semibold">{authUser.role}</div>
                   </div>
                   <button

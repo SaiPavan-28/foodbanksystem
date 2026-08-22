@@ -24,6 +24,23 @@ export const NGOPortal: React.FC = () => {
   const [urgency, setUrgency] = useState<'emergency' | 'evening' | 'daily'>('emergency');
   const [notes, setNotes] = useState('50 children at shelter. Hot meals needed for dinner.');
 
+  React.useEffect(() => {
+    if (authUser) {
+      if (authUser.establishmentName || authUser.name) {
+        setShelterName(authUser.establishmentName || authUser.name);
+      }
+      if (authUser.phone) {
+        setPhone(authUser.phone);
+      }
+      if (authUser.location) {
+        if (authUser.location.areaName) setAreaName(authUser.location.areaName);
+        if (authUser.location.address) setAddress(authUser.location.address);
+        if (authUser.location.lat) setLocationLat(authUser.location.lat);
+        if (authUser.location.lng) setLocationLng(authUser.location.lng);
+      }
+    }
+  }, [authUser]);
+
   // Modal State
   const [activeChatRequest, setActiveChatRequest] = useState<DonationRequest | null>(null);
 

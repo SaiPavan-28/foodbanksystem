@@ -12,19 +12,36 @@ export const DonorPortal: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'create' | 'my-requests' | 'rewards'>('create');
   
   // Form State
-  const [donorName, setDonorName] = useState(authUser?.name || 'Sri Grand Marriage Hall');
+  const [donorName, setDonorName] = useState(authUser?.establishmentName || authUser?.name || 'Sri Grand Marriage Hall');
   const [donorPhone, setDonorPhone] = useState(authUser?.phone || '+91 98401 22334');
   const [foodType, setFoodType] = useState<FoodType>('Veg Meals');
   const [quantityKg, setQuantityKg] = useState<number>(25);
   const [estimatedServings, setEstimatedServings] = useState<number>(80);
-  const [areaName, setAreaName] = useState('T. Nagar');
-  const [address, setAddress] = useState('12 Pondy Bazaar, T. Nagar, Chennai');
-  const [locationLat, setLocationLat] = useState(13.0400);
-  const [locationLng, setLocationLng] = useState(80.2300);
+  const [areaName, setAreaName] = useState(authUser?.location?.areaName || 'T. Nagar');
+  const [address, setAddress] = useState(authUser?.location?.address || '12 Pondy Bazaar, T. Nagar, Chennai');
+  const [locationLat, setLocationLat] = useState(authUser?.location?.lat || 13.0400);
+  const [locationLng, setLocationLng] = useState(authUser?.location?.lng || 80.2300);
   const [goldenHourHours, setGoldenHourHours] = useState<number>(3);
   const [photoUrl, setPhotoUrl] = useState('https://images.unsplash.com/photo-1555244162-803834f70033?w=600&auto=format&fit=crop&q=60');
   const [customPhotoFile, setCustomPhotoFile] = useState<string | null>(null);
   const [notes, setNotes] = useState('Freshly prepared lunch meals. Containers ready for pickup.');
+
+  React.useEffect(() => {
+    if (authUser) {
+      if (authUser.establishmentName || authUser.name) {
+        setDonorName(authUser.establishmentName || authUser.name);
+      }
+      if (authUser.phone) {
+        setDonorPhone(authUser.phone);
+      }
+      if (authUser.location) {
+        if (authUser.location.areaName) setAreaName(authUser.location.areaName);
+        if (authUser.location.address) setAddress(authUser.location.address);
+        if (authUser.location.lat) setLocationLat(authUser.location.lat);
+        if (authUser.location.lng) setLocationLng(authUser.location.lng);
+      }
+    }
+  }, [authUser]);
 
   // Modal States
   const [selectedCertRequest, setSelectedCertRequest] = useState<DonationRequest | null>(null);
