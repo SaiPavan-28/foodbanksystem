@@ -7,6 +7,7 @@ import { GoldenHourBadge } from '../components/GoldenHourBadge';
 import { VolunteerQuizModal } from '../components/VolunteerQuizModal';
 import { LiveChatModal } from '../components/LiveChatModal';
 import { LocationPickerMap } from '../components/LocationPickerMap';
+import { ProfileEditor } from '../components/ProfileEditor';
 import { haversineDistance, getBrowserLocation, reverseGeocode } from '../utils/geoUtils';
 import confetti from 'canvas-confetti';
 
@@ -324,7 +325,7 @@ export const VolunteerApp: React.FC = () => {
             </div>
 
             {/* Sub Nav Tabs */}
-            <div className="grid grid-cols-4 gap-2 p-1.5 bg-teal-950/90 rounded-2xl border border-teal-700/70 text-center text-xs font-bold shadow-inner">
+            <div className="grid grid-cols-5 gap-2 p-1.5 bg-teal-950/90 rounded-2xl border border-teal-700/70 text-center text-xs font-bold shadow-inner">
               <button
                 onClick={() => setActiveTab('incoming')}
                 className={`py-2 rounded-xl transition-all ${activeTab === 'incoming' ? 'bg-[#84CC16] text-slate-950 shadow font-black' : 'text-teal-300 hover:text-white'}`}
@@ -348,6 +349,12 @@ export const VolunteerApp: React.FC = () => {
                 className={`py-2 rounded-xl transition-all ${activeTab === 'training' ? 'bg-[#0D9488] text-white shadow font-black' : 'text-teal-300 hover:text-white'}`}
               >
                 Training
+              </button>
+              <button
+                onClick={() => setActiveTab('profile')}
+                className={`py-2 rounded-xl transition-all ${activeTab === 'profile' ? 'bg-[#0D9488] text-white shadow font-black' : 'text-teal-300 hover:text-white'}`}
+              >
+                Profile
               </button>
             </div>
           </div>
@@ -828,6 +835,13 @@ export const VolunteerApp: React.FC = () => {
                 </div>
               ))}
             </div>
+          </div>
+        )}
+
+        {/* Tab 5: Profile */}
+        {activeTab === 'profile' && (
+          <div className="space-y-6">
+            <ProfileEditor />
           </div>
         )}
 

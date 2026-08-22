@@ -5,11 +5,12 @@ import { FoodType, DonationRequest } from '../types/foodbridge';
 import { GoldenHourBadge } from '../components/GoldenHourBadge';
 import { LiveChatModal } from '../components/LiveChatModal';
 import { LocationPickerMap } from '../components/LocationPickerMap';
+import { ProfileEditor } from '../components/ProfileEditor';
 import confetti from 'canvas-confetti';
 
 export const DonorPortal: React.FC = () => {
   const { authUser, requests, addDonationRequest, updateRequestStatus, routeToFallbackShelter, donorPoints, donorTier, volunteers } = useFoodBridge();
-  const [activeTab, setActiveTab] = useState<'create' | 'my-requests' | 'rewards'>('create');
+  const [activeTab, setActiveTab] = useState<'create' | 'my-requests' | 'rewards' | 'profile'>('create');
   
   // Form State
   const [donorName, setDonorName] = useState(authUser?.establishmentName || authUser?.name || 'Sri Grand Marriage Hall');
@@ -155,6 +156,14 @@ export const DonorPortal: React.FC = () => {
             >
               <Star className="w-4 h-4 fill-amber-400 text-amber-400" />
               <span>Credit Points ({donorPoints})</span>
+            </button>
+            <button
+              onClick={() => setActiveTab('profile')}
+              className={`px-4 py-2 rounded-xl font-bold text-xs transition-all ${
+                activeTab === 'profile' ? 'bg-amber-500 text-slate-950 shadow' : 'text-emerald-200 hover:text-white'
+              }`}
+            >
+              Profile
             </button>
           </div>
         </div>
@@ -533,6 +542,13 @@ export const DonorPortal: React.FC = () => {
                 <p className="text-xs font-semibold mt-1 text-emerald-100">Current Rank: <b className="uppercase text-amber-300">{donorTier}</b></p>
               </div>
             </div>
+          </div>
+        )}
+
+        {/* Tab 4: Profile */}
+        {activeTab === 'profile' && (
+          <div className="space-y-6">
+            <ProfileEditor />
           </div>
         )}
 

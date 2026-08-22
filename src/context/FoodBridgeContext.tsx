@@ -51,6 +51,7 @@ interface FoodBridgeContextType {
   completeTrainingModule: (moduleId: string) => void;
   updateVolunteerLocation: (volunteerId: string, lat: number, lng: number, address: string, areaName: string) => void;
   updateVolunteerRadius: (volunteerId: string, radiusKm: number) => void;
+  updateProfile: (updatedData: Partial<AuthUser>) => Promise<{ success: boolean; error?: string }>;
   simulateNewRequest: () => void;
   // Dual Points
   donorPoints: number;
@@ -436,6 +437,45 @@ export const FoodBridgeProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   const logout = () => {
     setAuthUser(null);
     setCurrentRole('public');
+  };
+
+  const updateProfile = async (updatedData: Partial<AuthUser>): Promise<{ success: boolean; error?: string }> => {
+    if (!authUser) return { success: false, error: 'Not logged in' };
+
+    try {
+      const newAuthUser = { ...authUser, ...updatedData };
+      setAuthUser(newAuthUser);
+      
+      setRegisteredUsers(prev => 
+        prev.map(u => u.id === authUser.id ? { ...u, ...updatedData } : u)
+      );
+
+      const authRes = await api.auth.updateUser(authUser.id, updatedData);
+      if (!authRes?.success) {
+        console.warn('Failed to sync profile update to auth backend');
+      }
+
+      if (authUser.role === 'volunteer') {
+        const volUpdate = {
+          name: updatedData.name,
+          phone: updatedData.phone,
+          vehicleType: updatedData.vehicleType as any,
+          serviceRadiusKm: updatedData.serviceRadiusKm,
+          currentLocation: updatedData.location,
+        };
+        
+        Object.keys(volUpdate).forEach(key => (volUpdate as any)[key] === undefined && delete (volUpdate as any)[key]);
+
+        setVolunteers(prev => 
+          prev.map(v => v.id === authUser.id ? { ...v, ...volUpdate } : v)
+        );
+        await api.volunteers.update(authUser.id, volUpdate);
+      }
+
+      return { success: true };
+    } catch (err: any) {
+      return { success: false, error: err.message || 'Failed to update profile' };
+    }
   };
 
   const passVolunteerQuiz = (score: number) => {
@@ -973,6 +1013,7 @@ export const FoodBridgeProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         calculateMatchingScores,
         updateVolunteerLocation,
         updateVolunteerRadius,
+        updateProfile,
         triggerSmallBatchPooling,
         routeToFallbackShelter,
         completeTrainingModule,

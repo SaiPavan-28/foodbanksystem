@@ -5,11 +5,12 @@ import { FoodType, DonationRequest } from '../types/foodbridge';
 import { GoldenHourBadge } from '../components/GoldenHourBadge';
 import { LiveChatModal } from '../components/LiveChatModal';
 import { LocationPickerMap } from '../components/LocationPickerMap';
+import { ProfileEditor } from '../components/ProfileEditor';
 import confetti from 'canvas-confetti';
 
 export const NGOPortal: React.FC = () => {
   const { authUser, requests, addDonationRequest, updateRequestStatus, volunteers } = useFoodBridge();
-  const [activeTab, setActiveTab] = useState<'create' | 'my-requests' | 'impact'>('create');
+  const [activeTab, setActiveTab] = useState<'create' | 'my-requests' | 'impact' | 'profile'>('create');
 
   // Form State
   const [shelterName, setShelterName] = useState(authUser?.establishmentName || authUser?.name || 'Hope Children Shelter & NGO');
@@ -149,6 +150,14 @@ export const NGOPortal: React.FC = () => {
               }`}
             >
               Shelter Impact ({totalMealsReceived} Meals)
+            </button>
+            <button
+              onClick={() => setActiveTab('profile')}
+              className={`px-4 py-2 rounded-xl font-bold text-xs transition-all ${
+                activeTab === 'profile' ? 'bg-[#84CC16] text-slate-950 shadow font-black' : 'text-teal-200 hover:text-white'
+              }`}
+            >
+              Profile
             </button>
           </div>
         </div>
@@ -779,6 +788,13 @@ export const NGOPortal: React.FC = () => {
 
               </div>
             </div>
+          </div>
+        )}
+
+        {/* Tab 4: Profile */}
+        {activeTab === 'profile' && (
+          <div className="space-y-6">
+            <ProfileEditor />
           </div>
         )}
 
